@@ -1,8 +1,10 @@
 package wrados
 
+import "C"
 import (
 	"fmt"
 	"github.com/ceph/go-ceph/rados"
+	"time"
 )
 
 type Radcon struct {
@@ -16,46 +18,55 @@ var Rconnect = &Radcon{
 }
 
 func RadoConnect() *rados.Conn {
-
 	conn, err := rados.NewConn()
 	if err != nil {
 		fmt.Println("Error when invoke a new connection:", err)
 		return nil
 	}
-
 	err = conn.ReadDefaultConfigFile()
 	if err != nil {
 		fmt.Println("Error when read default config file:", err)
 		return nil
 	}
-
 	err = conn.Connect()
 	if err != nil {
 		fmt.Println("Error when connect:", err)
 		return nil
 	}
-
 	fmt.Println("Connect Ceph cluster OK!")
 	return conn
 }
 
 func ListPools() {
-	pools, _ := Rconnect.Connection.ListPools()
-	for p := range pools {
-		o := pools[p]
-		Rconnect.Poolnames[o] = true
+	for {
+		pools, _ := Rconnect.Connection.ListPools()
+		for p := range pools {
+			o := pools[p]
+			Rconnect.Poolnames[o] = true
+		}
+		time.Sleep(10 * time.Second)
 	}
+
 }
 
 func PutData(pool string, name string, input []byte) {
 	ioctx, _ := Rconnect.Connection.OpenIOContext(pool)
 	_ = ioctx.Write(name, input, 0)
+}
 
-	// read the data back out
-	//bytesOut := make([]byte, len(input))
-	//f, _ := ioctx.Read("obj", bytesOut, 0)
-	//if !bytes.Equal(input, bytesOut) {
-	//	fmt.Println("Output is not input!")
-	//}
-	//fmt.Println(f)
+func GetData(pool string, name string) []byte {
+	if _, ok := Rconnect.Poolnames[pool]; ok {
+		ioctx, e := Rconnect.Connection.OpenIOContext(pool)
+		if e != nil {
+			fmt.Println(e)
+		}
+		xo, _ := ioctx.Stat(name)
+		bytesOut := make([]byte, xo.Size)
+		out, _ := ioctx.Read(name, bytesOut, 0)
+		fmt.Println(out, pool, name, xo.Size)
+		return bytesOut
+	} else {
+		fmt.Println("Pool " + pool + " does not exists")
+		return nil
+	}
 }

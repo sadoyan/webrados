@@ -40,14 +40,10 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 
 	switch r.Method {
 	case "GET":
-		myParam := r.URL.Query().Get("param")
-		if myParam != "" {
-			_, _ = fmt.Fprintln(w, "Param is:", myParam)
-		}
-		key := r.FormValue("key")
-		if key != "" {
-			_, _ = fmt.Fprintln(w, "Key is:", key)
-		}
+		s := strings.Split(r.URL.Path, "/")
+		pool := s[1]
+		name := strings.Join(s[2:], "/")
+		_, _ = w.Write(wrados.GetData(pool, name))
 	case "POST", "PUT":
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
