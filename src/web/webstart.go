@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"runtime"
+	"strconv"
 	"strings"
 	"time"
 	"wrados"
@@ -43,7 +44,41 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 		s := strings.Split(r.URL.Path, "/")
 		pool := s[1]
 		name := strings.Join(s[2:], "/")
-		_, _ = w.Write(wrados.GetData(pool, name))
+		//-----------------------------------------------------------------------//
+		if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
+			ioctx, e := wrados.Rconnect.Connection.OpenIOContext(pool)
+			if e != nil {
+				fmt.Println(e)
+			}
+			xo, _ := ioctx.Stat(name)
+			ofs := uint64(0)
+			maxo := uint64(4096)
+
+			if xo.Size-ofs < maxo {
+				maxo = xo.Size
+				//ofs = xo.Size - ofs
+			}
+			w.Header().Set("Content-Length", strconv.FormatUint(xo.Size, 10))
+			for {
+				if xo.Size-ofs <= maxo {
+					maxo = xo.Size - ofs
+				}
+				bytesOut := make([]byte, maxo)
+				_, _ = ioctx.Read(name, bytesOut, ofs)
+				_, _ = w.Write(bytesOut)
+				ofs = ofs + maxo
+				if ofs >= xo.Size {
+					break
+				}
+			}
+
+		} else {
+			fmt.Println("Pool " + pool + " does not exists")
+		}
+		log.Println(pool, name)
+		//-----------------------------------------------------------------------//
+		//w.Header().Set("Access-Control-Allow-Origin", "*")
+		//_, _ = w.Write(wrados.GetData(pool, name))
 	case "POST", "PUT":
 		reqBody, err := ioutil.ReadAll(r.Body)
 		if err != nil {
