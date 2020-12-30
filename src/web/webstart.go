@@ -51,27 +51,26 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 				fmt.Println(e)
 			}
 			xo, _ := ioctx.Stat(name)
-			ofs := uint64(0)
-			maxo := uint64(4096)
+			of := uint64(0)
+			mx := uint64(4096)
 
-			if xo.Size-ofs < maxo {
-				maxo = xo.Size
+			if xo.Size-of < mx {
+				mx = xo.Size
 				//ofs = xo.Size - ofs
 			}
 			w.Header().Set("Content-Length", strconv.FormatUint(xo.Size, 10))
 			for {
-				if xo.Size-ofs <= maxo {
-					maxo = xo.Size - ofs
+				if xo.Size-of <= mx {
+					mx = xo.Size - of
 				}
-				bytesOut := make([]byte, maxo)
-				_, _ = ioctx.Read(name, bytesOut, ofs)
+				bytesOut := make([]byte, mx)
+				_, _ = ioctx.Read(name, bytesOut, of)
 				_, _ = w.Write(bytesOut)
-				ofs = ofs + maxo
-				if ofs >= xo.Size {
+				of = of + mx
+				if of >= xo.Size {
 					break
 				}
 			}
-
 		} else {
 			fmt.Println("Pool " + pool + " does not exists")
 		}
@@ -80,17 +79,31 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 		//w.Header().Set("Access-Control-Allow-Origin", "*")
 		//_, _ = w.Write(wrados.GetData(pool, name))
 	case "POST", "PUT":
-		reqBody, err := ioutil.ReadAll(r.Body)
-		if err != nil {
-			log.Fatal(err)
-		}
+
 		s := strings.Split(r.URL.Path, "/")
 		if len(s) >= 3 {
-			pool := s[1]
-			name := strings.Join(s[2:], "/")
 			if _, ok := wrados.Rconnect.Poolnames[s[1]]; ok {
-				wrados.PutData(pool, name, reqBody)
-				fmt.Println("Uploaded", name, "to pool", pool)
+				pool := s[1]
+				name := strings.Join(s[2:], "/")
+
+				ioct, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
+
+				reqBody, _ := ioutil.ReadAll(r.Body)
+				_ = ioct.Write(name, reqBody, 0)
+
+				//reqBody := bufio.NewReader(r.Body)
+				//lenq, _ := strconv.Atoi(r.Header.Get("Content-Length"))
+				//_ = ioct.Create(name, rados.CreateOption(lenq))
+				//for {
+				//	line, err := reqBody.ReadBytes('\n')
+				//	if err == io.EOF {
+				//		break
+				//	}
+				//	_ = ioct.Append(name, line)
+				//
+				//}
+
+				fmt.Println("Method", r.Method, r.Header.Get("Content-Length"), name, "bytes to pool", pool)
 			} else {
 				fmt.Println("Invalid pool name")
 			}

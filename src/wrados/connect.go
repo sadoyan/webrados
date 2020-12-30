@@ -52,6 +52,7 @@ func ListPools() {
 func PutData(pool string, name string, input []byte) {
 	ioctx, _ := Rconnect.Connection.OpenIOContext(pool)
 	_ = ioctx.Write(name, input, 0)
+	//fmt.Println(input)
 }
 
 func GetData(pool string, name string) []byte {
