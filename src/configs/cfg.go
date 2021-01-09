@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"gopkg.in/ini.v1"
 	"os"
+	"strings"
 )
 
 type CfgType struct {
@@ -20,10 +21,11 @@ type CfgType struct {
 	ClientPass       string
 	InternalQueue    bool
 	queue            chan string
-
-	Monurl  string
-	Monuser string
-	Monpass string
+	Uploadmaxpart    int
+	DangeZone        bool
+	Monurl           string
+	Monuser          string
+	Monpass          string
 }
 
 var Conf = &CfgType{
@@ -38,9 +40,10 @@ var Conf = &CfgType{
 	ClientPass:       "",
 	InternalQueue:    false,
 	Monenabled:       false,
-	//Monurl:           "127.0.0.1:9191",
-	Monuser: "",
-	Monpass: "",
+	Monuser:          "",
+	Monpass:          "",
+	Uploadmaxpart:    0,
+	DangeZone:        false,
 }
 
 var authorized = make(map[string]string, 10)
@@ -58,15 +61,29 @@ func SetVarsik() {
 	}
 
 	Conf.HttpAddress = cfg.Section("main").Key("listen").String()
-	//Conf.DestinationURL = cfg.Section("main").Key("remote").String()
 	Conf.DispatchersCount, _ = cfg.Section("main").Key("dispatchers").Int()
 	Conf.InternalQueue, _ = cfg.Section("main").Key("internalqueue").Bool()
 	qs, _ := cfg.Section("main").Key("queuesize").Int()
 	Conf.queue = make(chan string, qs)
 
-	Conf.ServerAuth, _ = cfg.Section("server").Key("serverauth").Bool()
-	Conf.ServerUser = cfg.Section("server").Key("serveruser").String()
-	Conf.ServerPass = cfg.Section("server").Key("serverpass").String()
+	Conf.Uploadmaxpart, err = cfg.Section("main").Key("uploadmaxpart").Int()
+	if err != nil {
+		panic("Please set numeric value to Uploadmaxpart")
+	}
+
+	switch strings.ToLower(cfg.Section("main").Key("dangerzone").String()) {
+	case "yes":
+		Conf.DangeZone = true
+	case "no":
+		Conf.DangeZone = false
+	default:
+		fmt.Println("\n DangerZone should be 'yes' or 'no' \n")
+		os.Exit(1)
+	}
+
+	Conf.ServerAuth, _ = cfg.Section("main").Key("serverauth").Bool()
+	Conf.ServerUser = cfg.Section("main").Key("serveruser").String()
+	Conf.ServerPass = cfg.Section("main").Key("serverpass").String()
 
 	Conf.ClientAuth, _ = cfg.Section("client").Key("clientauth").Bool()
 	Conf.ClientUser = cfg.Section("client").Key("clientuser").String()
@@ -77,6 +94,6 @@ func SetVarsik() {
 	Conf.Monuser = cfg.Section("monitoring").Key("user").String()
 	Conf.Monpass = cfg.Section("monitoring").Key("pass").String()
 
-	authorized["server"] = Conf.ServerUser + ":" + Conf.ServerPass
+	authorized["main"] = Conf.ServerUser + ":" + Conf.ServerPass
 	authorized["mon"] = Conf.Monuser + ":" + Conf.Monpass
 }
