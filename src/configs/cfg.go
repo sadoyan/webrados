@@ -23,6 +23,7 @@ type CfgType struct {
 	queue            chan string
 	Uploadmaxpart    int
 	DangeZone        bool
+	Readonly         bool
 	Monurl           string
 	Monuser          string
 	Monpass          string
@@ -44,9 +45,23 @@ var Conf = &CfgType{
 	Monpass:          "",
 	Uploadmaxpart:    0,
 	DangeZone:        false,
+	Readonly:         false,
 }
 
 var authorized = make(map[string]string, 10)
+
+func stringTObool(key string, value string) bool {
+	switch value {
+	case "yes":
+		return true
+	case "no":
+		return false
+	default:
+		fmt.Println("\n Value for " + key + " should be  'yes' or 'no' \n")
+		os.Exit(1)
+	}
+	return false
+}
 
 func SetVarsik() {
 
@@ -71,16 +86,6 @@ func SetVarsik() {
 		panic("Please set numeric value to Uploadmaxpart")
 	}
 
-	switch strings.ToLower(cfg.Section("main").Key("dangerzone").String()) {
-	case "yes":
-		Conf.DangeZone = true
-	case "no":
-		Conf.DangeZone = false
-	default:
-		fmt.Println("\n DangerZone should be 'yes' or 'no' \n")
-		os.Exit(1)
-	}
-
 	Conf.ServerAuth, _ = cfg.Section("main").Key("serverauth").Bool()
 	Conf.ServerUser = cfg.Section("main").Key("serveruser").String()
 	Conf.ServerPass = cfg.Section("main").Key("serverpass").String()
@@ -96,4 +101,19 @@ func SetVarsik() {
 
 	authorized["main"] = Conf.ServerUser + ":" + Conf.ServerPass
 	authorized["mon"] = Conf.Monuser + ":" + Conf.Monpass
+
+	Conf.Readonly = stringTObool("readonly", strings.ToLower(cfg.Section("main").Key("readonly").String()))
+
+	switch stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String())) {
+	case true:
+		if Conf.Readonly {
+			fmt.Println("Running in read only mode cannot enable dangerous commands")
+			os.Exit(1)
+		} else {
+			Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
+		}
+	case false:
+		Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
+	}
+
 }

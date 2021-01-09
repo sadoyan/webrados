@@ -73,53 +73,64 @@ func Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func Put(w http.ResponseWriter, r *http.Request) {
-	s := strings.Split(r.URL.Path, "/")
-	if len(s) >= 3 {
-		if _, ok := wrados.Rconnect.Poolnames[s[1]]; ok {
-			pool := s[1]
-			name := strings.Join(s[2:], "/")
+	switch configs.Conf.Readonly {
+	case false:
+		s := strings.Split(r.URL.Path, "/")
+		if len(s) >= 3 {
+			if _, ok := wrados.Rconnect.Poolnames[s[1]]; ok {
+				pool := s[1]
+				name := strings.Join(s[2:], "/")
 
-			ioct, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
-			lenq, _ := strconv.Atoi(r.Header.Get("Content-Length"))
+				ioct, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
+				lenq, _ := strconv.Atoi(r.Header.Get("Content-Length"))
 
-			if lenq < configs.Conf.Uploadmaxpart {
-				reqBody, _ := ioutil.ReadAll(r.Body)
-				_ = ioct.Write(name, reqBody, 0)
-			} else {
-				reqBody := bufio.NewReader(r.Body)
-				_ = ioct.Create(name, rados.CreateOption(lenq))
-				mukuch := make([]byte, 0)
-				for {
-					line, err := reqBody.ReadBytes('\n')
-					mukuch = append(mukuch, line...)
-					if err == io.EOF {
-						xo, _ := ioct.Stat(name)
-						_ = ioct.Write(name, mukuch, xo.Size)
-						break
-					}
-					if len(mukuch) > configs.Conf.Uploadmaxpart {
-						xo, _ := ioct.Stat(name)
-						_ = ioct.Write(name, mukuch, xo.Size)
-						mukuch = nil
+				if lenq < configs.Conf.Uploadmaxpart {
+					reqBody, _ := ioutil.ReadAll(r.Body)
+					_ = ioct.Write(name, reqBody, 0)
+				} else {
+					reqBody := bufio.NewReader(r.Body)
+					_ = ioct.Create(name, rados.CreateOption(lenq))
+					mukuch := make([]byte, 0)
+					for {
+						line, err := reqBody.ReadBytes('\n')
+						mukuch = append(mukuch, line...)
+						if err == io.EOF {
+							xo, _ := ioct.Stat(name)
+							_ = ioct.Write(name, mukuch, xo.Size)
+							break
+						}
+						if len(mukuch) > configs.Conf.Uploadmaxpart {
+							xo, _ := ioct.Stat(name)
+							_ = ioct.Write(name, mukuch, xo.Size)
+							mukuch = nil
+						}
 					}
 				}
+				log.Println("Method", r.Method, r.Header.Get("Content-Length"), "bytes", name, "to", pool)
+			} else {
+				log.Println("Invalid pool name")
+				w.WriteHeader(http.StatusInternalServerError)
+				_, _ = w.Write([]byte("500: Invalid pool name \n"))
 			}
-			log.Println("Method", r.Method, r.Header.Get("Content-Length"), "bytes", name, "to", pool)
-		} else {
-			log.Println("Invalid pool name")
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte("500: Invalid pool name \n"))
-		}
 
-	} else {
-		log.Println("File path is too short")
-		w.WriteHeader(http.StatusInternalServerError)
-		_, _ = w.Write([]byte("500: File path is too short \n"))
+		} else {
+			log.Println("File path is too short")
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte("500: File path is too short \n"))
+		}
+	default:
+		w.WriteHeader(http.StatusForbidden)
+		msg := "Server is running in read only mode !"
+		log.Println(msg)
+		_, _ = fmt.Fprintf(w, msg+"\n")
+
 	}
+
 }
 
 func Del(w http.ResponseWriter, r *http.Request) {
-	if configs.Conf.DangeZone {
+	switch configs.Conf.DangeZone {
+	case true:
 		s := strings.Split(r.URL.Path, "/")
 		if len(s) >= 3 {
 			if _, ok := wrados.Rconnect.Poolnames[s[1]]; ok {
@@ -136,7 +147,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 		}
-	} else {
+	default:
 		w.WriteHeader(http.StatusForbidden)
 		msg := "Dangerous commands are disabled !"
 		log.Println(msg)
