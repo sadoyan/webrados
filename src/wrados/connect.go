@@ -33,7 +33,7 @@ func RadoConnect() *rados.Conn {
 		fmt.Println("Error when connect:", err)
 		return nil
 	}
-	fmt.Println("Connect Ceph cluster OK!")
+	fmt.Println("Connected to Ceph cluster")
 	return conn
 }
 

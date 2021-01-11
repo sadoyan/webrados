@@ -77,10 +77,9 @@ func Put(w http.ResponseWriter, r *http.Request) {
 	case false:
 		s := strings.Split(r.URL.Path, "/")
 		if len(s) >= 3 {
-			if _, ok := wrados.Rconnect.Poolnames[s[1]]; ok {
-				pool := s[1]
-				name := strings.Join(s[2:], "/")
-
+			pool := s[1]
+			name := strings.Join(s[2:], "/")
+			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
 				ioct, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
 				lenq, _ := strconv.Atoi(r.Header.Get("Content-Length"))
 
@@ -133,9 +132,9 @@ func Del(w http.ResponseWriter, r *http.Request) {
 	case true:
 		s := strings.Split(r.URL.Path, "/")
 		if len(s) >= 3 {
-			if _, ok := wrados.Rconnect.Poolnames[s[1]]; ok {
-				pool := s[1]
-				name := strings.Join(s[2:], "/")
+			pool := s[1]
+			name := strings.Join(s[2:], "/")
+			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
 				ioct, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
 				f := ioct.Delete(name)
 				if f != nil {
@@ -159,8 +158,8 @@ func Head(w http.ResponseWriter, r *http.Request) {
 	if configs.Conf.DangeZone {
 		s := strings.Split(r.URL.Path, "/")
 		if len(s) == 2 {
-			if _, ok := wrados.Rconnect.Poolnames[s[1]]; ok {
-				pool := s[1]
+			pool := s[1]
+			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
 				m, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
 				c, _ := m.GetPoolStats()
 				fmt.Println(c)

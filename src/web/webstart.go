@@ -9,39 +9,72 @@ import (
 	"time"
 )
 
-//func Startserver() {
-//	fmt.Println("Hi")
-//}
+var users = map[string]string{
+	//"test":  "secret",
+}
+
+func isAuthorised(username, password string) bool {
+	pass, ok := users[username]
+	if !ok {
+		return false
+	}
+	return password == pass
+}
+
+func authenticate(w http.ResponseWriter, r *http.Request) bool {
+	//w.Header().Add("Content-Type", "application/json")
+	username, password, ok := r.BasicAuth()
+	if !ok {
+		w.Header().Add("WWW-Authenticate", `Basic realm="Authentication Required"`)
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte("No basic auth present\n"))
+		log.Println("401 Unauthorized: No basic auth present")
+		return false
+	}
+
+	if !isAuthorised(username, password) {
+		w.Header().Add("WWW-Authenticate", `Basic realm="Give username and password"`)
+		w.WriteHeader(http.StatusUnauthorized)
+		_, _ = w.Write([]byte("Invalid Credentials\n"))
+		log.Println("401 Unauthorized: Invalid Credentials")
+		return false
+	}
+	w.WriteHeader(http.StatusOK)
+	return true
+
+}
+
 // -------------------------------------------------------------------------- //
 func dynHandler(w http.ResponseWriter, r *http.Request) {
-	//const unauth = http.StatusUnauthorized
-	//if configs.Conf.serverAuth {
-	//	auth := r.Header.Get("Authorization")
-	//	if !strings.HasPrefix(auth, "Basic ") {
-	//		log.Print("Invalid authorization:", auth)
-	//		http.Error(w, http.StatusText(unauth), unauth)
-	//		return
-	//	}
-	//	up, err := base64.StdEncoding.DecodeString(auth[6:])
-	//	if err != nil {
-	//		log.Print("authorization decode error:", err)
-	//		http.Error(w, http.StatusText(unauth), unauth)
-	//		return
-	//	}
-	//	if string(up) != authorized["server"] {
-	//		http.Error(w, http.StatusText(unauth), unauth)
-	//		return
-	//	}
-	//}
-	// -- ---------- -- //
-
+	users[configs.Conf.ServerUser] = configs.Conf.ServerPass
+	//fmt.Println(users)
 	switch r.Method {
 	case "GET":
-		Get(w, r)
+		if configs.Conf.AuthRead {
+			if authenticate(w, r) {
+				Get(w, r)
+			}
+		} else {
+			Get(w, r)
+		}
 	case "POST", "PUT":
-		Put(w, r)
+		if configs.Conf.AuthWrite {
+			if authenticate(w, r) {
+				Put(w, r)
+			}
+		} else {
+			Put(w, r)
+		}
+
 	case "DELETE":
-		Del(w, r)
+		if configs.Conf.AuthWrite {
+			if authenticate(w, r) {
+				Del(w, r)
+			}
+		} else {
+			Del(w, r)
+		}
+		//Del(w, r)
 	case "HEAD":
 		Head(w, r)
 	default:
@@ -60,7 +93,6 @@ func playmux0() {
 		WriteTimeout: 100 * time.Second,
 	}
 	_ = s1.ListenAndServe()
-
 }
 
 func mxhandl(w http.ResponseWriter, r *http.Request) {
@@ -71,39 +103,22 @@ func mxhandl(w http.ResponseWriter, r *http.Request) {
 func playmux1() {
 	mux1 := http.NewServeMux()
 	mux1.HandleFunc("/", mxhandl)
-
 	s2 := http.Server{
 		Addr:         configs.Conf.MonAddress,
 		Handler:      mux1,
 		ReadTimeout:  100 * time.Second,
 		WriteTimeout: 100 * time.Second,
 	}
+	log.Println("Starting monitoring instance at:", configs.Conf.MonAddress)
 	_ = s2.ListenAndServe()
 
 }
 
 func RunServer() {
-	//http.HandleFunc("/", dynHandler)
-	//fmt.Println("starting server at: " + configs.Conf.HttpAddress)
-
 	if configs.Conf.Monenabled {
 		go playmux1()
 	}
-
-	log.Print("Started WebRados ")
+	log.Println("Starting WebRados server at:", configs.Conf.HttpAddress)
 	runtime.Gosched()
-
 	playmux0()
-
-	//if configs.Conf.Monenabled {
-	//	go playmux1()
-	//}
-
-	//log.Println("Currently running", runtime.NumGoroutine(), "Goroutines")
-
-	//forever := make(chan bool)
-	//<-forever
-
-	//log.Fatal(http.ListenAndServe(":9090", nil))
-
 }

@@ -2,9 +2,8 @@ package configs
 
 import (
 	"flag"
-	"fmt"
 	"gopkg.in/ini.v1"
-	"os"
+	"log"
 	"strings"
 )
 
@@ -13,39 +12,42 @@ type CfgType struct {
 	MonAddress       string
 	Monenabled       bool
 	DispatchersCount int
-	ServerAuth       bool
-	ServerUser       string
-	ServerPass       string
-	ClientAuth       bool
-	ClientUser       string
-	ClientPass       string
-	InternalQueue    bool
-	queue            chan string
-	Uploadmaxpart    int
-	DangeZone        bool
-	Readonly         bool
-	Monurl           string
-	Monuser          string
-	Monpass          string
+	//ServerAuth       bool
+	AuthRead      bool
+	AuthWrite     bool
+	ServerUser    string
+	ServerPass    string
+	ClientAuth    bool
+	ClientUser    string
+	ClientPass    string
+	InternalQueue bool
+	queue         chan string
+	Uploadmaxpart int
+	DangeZone     bool
+	Readonly      bool
+	Monuser       string
+	Monpass       string
 }
 
 var Conf = &CfgType{
 	HttpAddress:      "127.0.0.1:8080",
 	MonAddress:       "127.0.0.1:8989",
 	DispatchersCount: 20,
-	ServerAuth:       false,
-	ServerUser:       "",
-	ServerPass:       "",
-	ClientAuth:       false,
-	ClientUser:       "",
-	ClientPass:       "",
-	InternalQueue:    false,
-	Monenabled:       false,
-	Monuser:          "",
-	Monpass:          "",
-	Uploadmaxpart:    0,
-	DangeZone:        false,
-	Readonly:         false,
+	//ServerAuth:       false,
+	AuthRead:      false,
+	AuthWrite:     false,
+	ServerUser:    "",
+	ServerPass:    "",
+	ClientAuth:    false,
+	ClientUser:    "",
+	ClientPass:    "",
+	InternalQueue: false,
+	Monenabled:    false,
+	Monuser:       "",
+	Monpass:       "",
+	Uploadmaxpart: 0,
+	DangeZone:     false,
+	Readonly:      false,
 }
 
 var authorized = make(map[string]string, 10)
@@ -57,8 +59,7 @@ func stringTObool(key string, value string) bool {
 	case "no":
 		return false
 	default:
-		fmt.Println("\n Value for " + key + " should be  'yes' or 'no' \n")
-		os.Exit(1)
+		log.Fatal("\n Value for " + key + " should be  'yes' or 'no' \n")
 	}
 	return false
 }
@@ -67,12 +68,10 @@ func SetVarsik() {
 
 	cfgFile := flag.String("config", "config.ini", "a string")
 	flag.Parse()
-	fmt.Println("Using :", *cfgFile, "as config file")
 
 	cfg, err := ini.Load(*cfgFile)
 	if err != nil {
-		fmt.Printf("Fail to read config file: %v", err)
-		os.Exit(1)
+		log.Fatal("Fail to read config file: %v", err)
 	}
 
 	Conf.HttpAddress = cfg.Section("main").Key("listen").String()
@@ -83,10 +82,10 @@ func SetVarsik() {
 
 	Conf.Uploadmaxpart, err = cfg.Section("main").Key("uploadmaxpart").Int()
 	if err != nil {
-		panic("Please set numeric value to Uploadmaxpart")
+		log.Fatal("Please set numeric value to Uploadmaxpart")
 	}
 
-	Conf.ServerAuth, _ = cfg.Section("main").Key("serverauth").Bool()
+	//Conf.ServerAuth, _ = cfg.Section("main").Key("serverauth").Bool()
 	Conf.ServerUser = cfg.Section("main").Key("serveruser").String()
 	Conf.ServerPass = cfg.Section("main").Key("serverpass").String()
 
@@ -95,20 +94,21 @@ func SetVarsik() {
 	Conf.ClientPass = cfg.Section("client").Key("clientpass").String()
 
 	Conf.Monenabled, _ = cfg.Section("monitoring").Key("enabled").Bool()
-	Conf.Monurl = cfg.Section("monitoring").Key("url").String()
+	Conf.MonAddress = cfg.Section("monitoring").Key("url").String()
 	Conf.Monuser = cfg.Section("monitoring").Key("user").String()
 	Conf.Monpass = cfg.Section("monitoring").Key("pass").String()
 
 	authorized["main"] = Conf.ServerUser + ":" + Conf.ServerPass
 	authorized["mon"] = Conf.Monuser + ":" + Conf.Monpass
 
+	Conf.AuthWrite = stringTObool("authwrite", strings.ToLower(cfg.Section("main").Key("authwrite").String()))
+	Conf.AuthRead = stringTObool("authread", strings.ToLower(cfg.Section("main").Key("authread").String()))
 	Conf.Readonly = stringTObool("readonly", strings.ToLower(cfg.Section("main").Key("readonly").String()))
 
 	switch stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String())) {
 	case true:
 		if Conf.Readonly {
-			fmt.Println("Running in read only mode cannot enable dangerous commands")
-			os.Exit(1)
+			log.Fatal("Running in read only mode cannot enable dangerous commands")
 		} else {
 			Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
 		}
