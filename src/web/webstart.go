@@ -1,11 +1,14 @@
 package web
 
 import (
+	"bufio"
 	"configs"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
+	"strings"
 	"time"
 )
 
@@ -42,6 +45,30 @@ func authenticate(w http.ResponseWriter, r *http.Request) bool {
 	w.WriteHeader(http.StatusOK)
 	return true
 
+}
+
+func PopulateUsers() {
+	for {
+		c, e := os.Open("users.txt")
+		content := bufio.NewScanner(c)
+		if e != nil {
+			log.Println(e)
+		}
+
+		for content.Scan() {
+			if len(content.Text()) > 0 {
+				z := strings.Split(content.Text(), " ")
+				if _, ok := users[z[0]]; !ok {
+					fmt.Println("Found new user: " + z[0] + ", enabling!")
+					users[z[0]] = z[1]
+				}
+			}
+			//fmt.Println(":", content.Text())
+		}
+		_ = c.Close()
+		time.Sleep(10 * time.Second)
+	}
+	//fmt.Println(users)
 }
 
 // -------------------------------------------------------------------------- //
