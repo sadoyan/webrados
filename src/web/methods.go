@@ -38,7 +38,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		xo, lo := ioctx.Stat(name)
 		if lo == nil {
 			of := uint64(0)
-			mx := uint64(4096)
+			mx := uint64(20480)
 			if xo.Size-of < mx {
 				mx = xo.Size
 			}
@@ -51,10 +51,12 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				_, err := ioctx.Read(name, bytesOut, of)
 				if err != nil {
 					log.Println(err)
+					break
 				}
 				_, er := w.Write(bytesOut)
 				if er != nil {
 					log.Println(er)
+					break
 				}
 				of = of + mx
 				if of >= xo.Size {
@@ -69,6 +71,25 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		log.Println("Pool " + pool + " does not exists")
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("500 Internal Server Error \n"))
+	}
+}
+
+func Got(w http.ResponseWriter, r *http.Request) {
+	s := strings.Split(r.URL.Path, "/")
+	pool := s[1]
+	name := strings.Join(s[2:], "/")
+	if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
+		ioctx, e := wrados.Rconnect.Connection.OpenIOContext(pool)
+		if e != nil {
+			fmt.Println(e)
+		}
+		xo, _ := ioctx.Stat(name)
+		bytesOut := make([]byte, xo.Size)
+		out, _ := ioctx.Read(name, bytesOut, 0)
+		fmt.Println(out, pool, name, xo.Size)
+		_, _ = w.Write(bytesOut)
+	} else {
+		fmt.Println("Pool " + pool + " does not exists")
 	}
 }
 
