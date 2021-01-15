@@ -73,7 +73,7 @@ func PopulateUsers() {
 
 // -------------------------------------------------------------------------- //
 func dynHandler(w http.ResponseWriter, r *http.Request) {
-	users[configs.Conf.ServerUser] = configs.Conf.ServerPass
+
 	//fmt.Println(users)
 	switch r.Method {
 	case "GET":
@@ -130,6 +130,7 @@ func mxhandl(w http.ResponseWriter, r *http.Request) {
 func playmux1() {
 	mux1 := http.NewServeMux()
 	mux1.HandleFunc("/", mxhandl)
+	users[configs.Conf.ServerUser] = configs.Conf.ServerPass
 	s2 := http.Server{
 		Addr:         configs.Conf.MonAddress,
 		Handler:      mux1,
