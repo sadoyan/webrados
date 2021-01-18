@@ -23,6 +23,7 @@ type CfgType struct {
 	InternalQueue bool
 	queue         chan string
 	Uploadmaxpart int
+	Radoconns     int
 	DangeZone     bool
 	Readonly      bool
 	Monuser       string
@@ -46,6 +47,7 @@ var Conf = &CfgType{
 	Monuser:       "",
 	Monpass:       "",
 	Uploadmaxpart: 0,
+	Radoconns:     0,
 	DangeZone:     false,
 	Readonly:      false,
 }
@@ -83,6 +85,11 @@ func SetVarsik() {
 	Conf.Uploadmaxpart, err = cfg.Section("main").Key("uploadmaxpart").Int()
 	if err != nil {
 		log.Fatal("Please set numeric value to Uploadmaxpart")
+	}
+
+	Conf.Radoconns, err = cfg.Section("main").Key("radoconns").Int()
+	if err != nil {
+		log.Fatal("Please set numeric value to Radoconns")
 	}
 
 	//Conf.ServerAuth, _ = cfg.Section("main").Key("serverauth").Bool()

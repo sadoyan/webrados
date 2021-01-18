@@ -8,6 +8,7 @@ import (
 	"io"
 	"io/ioutil"
 	"log"
+	"math/rand"
 	"net/http"
 	"strconv"
 	"strings"
@@ -31,7 +32,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	pool := s[1]
 	name := strings.Join(s[2:], "/")
 	if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-		ioctx, e := wrados.Rconnect.Connection.OpenIOContext(pool)
+		randindex := rand.Intn(len(wrados.Rconnect.Connection))
+		ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 		if e != nil {
 			log.Println(e)
 		}
@@ -79,7 +81,8 @@ func Got(w http.ResponseWriter, r *http.Request) {
 	pool := s[1]
 	name := strings.Join(s[2:], "/")
 	if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-		ioctx, e := wrados.Rconnect.Connection.OpenIOContext(pool)
+		randindex := rand.Intn(len(wrados.Rconnect.Connection))
+		ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 		if e != nil {
 			fmt.Println(e)
 		}
@@ -101,7 +104,8 @@ func Put(w http.ResponseWriter, r *http.Request) {
 			pool := s[1]
 			name := strings.Join(s[2:], "/")
 			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-				ioct, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
+				randindex := rand.Intn(len(wrados.Rconnect.Connection))
+				ioct, _ := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 				lenq, _ := strconv.Atoi(r.Header.Get("Content-Length"))
 
 				if lenq < configs.Conf.Uploadmaxpart {
@@ -156,7 +160,8 @@ func Del(w http.ResponseWriter, r *http.Request) {
 			pool := s[1]
 			name := strings.Join(s[2:], "/")
 			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-				ioct, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
+				randindex := rand.Intn(len(wrados.Rconnect.Connection))
+				ioct, _ := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 				f := ioct.Delete(name)
 				if f != nil {
 					_, _ = fmt.Fprintf(w, respCodewriter(f, w, r))
@@ -181,7 +186,8 @@ func Head(w http.ResponseWriter, r *http.Request) {
 		if len(s) == 2 {
 			pool := s[1]
 			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-				m, _ := wrados.Rconnect.Connection.OpenIOContext(pool)
+				randindex := rand.Intn(len(wrados.Rconnect.Connection))
+				m, _ := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 				c, _ := m.GetPoolStats()
 				fmt.Println(c)
 			}

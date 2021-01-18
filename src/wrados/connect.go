@@ -2,19 +2,23 @@ package wrados
 
 import "C"
 import (
+	"configs"
 	"fmt"
 	"github.com/ceph/go-ceph/rados"
+	"math/rand"
 	"time"
 )
 
 type Radcon struct {
-	Connection *rados.Conn
-	Poolnames  map[string]bool
+	Connection []*rados.Conn
+	//Connection *rados.Conn
+	Poolnames map[string]bool
 }
 
 var Rconnect = &Radcon{
 	Connection: nil,
-	Poolnames:  map[string]bool{},
+	//Connection: nil,
+	Poolnames: map[string]bool{},
 }
 
 func RadoConnect() {
@@ -30,16 +34,22 @@ func RadoConnect() {
 	if err != nil {
 		fmt.Println("Error when connect:", err)
 	}
-	fmt.Println("Connected to Ceph cluster")
-	Rconnect.Connection = conn
+	fmt.Println("Addning Rados connection to pool, Connected to Ceph cluster")
+	//Rconnect.Connection = conn
+	Rconnect.Connection = append(Rconnect.Connection, conn)
 }
 
 func ListPools() {
+	n := 0
 	for {
-		if Rconnect.Connection == nil {
-			RadoConnect()
+		if len(Rconnect.Connection) < configs.Conf.Radoconns {
+			for n <= configs.Conf.Radoconns {
+				RadoConnect()
+				n = n + 1
+			}
 		}
-		pools, _ := Rconnect.Connection.ListPools()
+		randindex := rand.Intn(configs.Conf.Radoconns)
+		pools, _ := Rconnect.Connection[randindex].ListPools()
 		for p := range pools {
 			o := pools[p]
 			Rconnect.Poolnames[o] = true
