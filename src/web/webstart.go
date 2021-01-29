@@ -59,7 +59,7 @@ func PopulateUsers() {
 			if len(content.Text()) > 0 {
 				z := strings.Split(content.Text(), " ")
 				if _, ok := users[z[0]]; !ok {
-					fmt.Println("Found new user: " + z[0] + ", enabling!")
+					log.Println("Found new user: " + z[0] + ", enabling!")
 					users[z[0]] = z[1]
 				}
 			}
@@ -113,11 +113,12 @@ func playmux0() {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", dynHandler)
 
-	s1 := http.Server{
+	s1 := &http.Server{
 		Addr:         configs.Conf.HttpAddress,
 		Handler:      mux,
 		ReadTimeout:  100 * time.Second,
-		WriteTimeout: 100 * time.Second,
+		WriteTimeout: 10800 * time.Second,
+		IdleTimeout:  1,
 	}
 	_ = s1.ListenAndServe()
 }

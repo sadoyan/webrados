@@ -9,6 +9,6 @@ import (
 func main() {
 	configs.SetVarsik()
 	go web.PopulateUsers()
-	go wrados.ListPools()
+	go wrados.LsPools()
 	web.RunServer()
 }

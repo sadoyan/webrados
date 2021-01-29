@@ -3,43 +3,40 @@ package wrados
 import "C"
 import (
 	"configs"
-	"fmt"
 	"github.com/ceph/go-ceph/rados"
-	"math/rand"
+	"log"
+	"reflect"
 	"time"
 )
 
 type Radcon struct {
 	Connection []*rados.Conn
-	//Connection *rados.Conn
-	Poolnames map[string]bool
+	Poolnames  map[string]bool
 }
 
 var Rconnect = &Radcon{
 	Connection: nil,
-	//Connection: nil,
-	Poolnames: map[string]bool{},
+	Poolnames:  map[string]bool{},
 }
 
 func RadoConnect() {
 	conn, err := rados.NewConn()
 	if err != nil {
-		fmt.Println("Error when invoke a new connection:", err)
+		log.Println("Error when invoke a new connection:", err)
 	}
 	err = conn.ReadDefaultConfigFile()
 	if err != nil {
-		fmt.Println("Error when read default config file:", err)
+		log.Println("Error when read default config file:", err)
 	}
 	err = conn.Connect()
 	if err != nil {
-		fmt.Println("Error when connect:", err)
+		log.Println("Error when connect:", err)
 	}
-	fmt.Println("Addning Rados connection to pool, Connected to Ceph cluster")
-	//Rconnect.Connection = conn
+	log.Println("Adding Rados connection to pool, Connected to Ceph cluster")
 	Rconnect.Connection = append(Rconnect.Connection, conn)
 }
 
-func ListPools() {
+func LsPools() {
 	n := 0
 	for {
 		if len(Rconnect.Connection) < configs.Conf.Radoconns {
@@ -48,13 +45,39 @@ func ListPools() {
 				n = n + 1
 			}
 		}
-		randindex := rand.Intn(configs.Conf.Radoconns)
-		pools, _ := Rconnect.Connection[randindex].ListPools()
+		//randindex := rand.Intn(configs.Conf.Radoconns)
+		//pools, _ := Rconnect.Connection[randindex].ListPools()
+		vsyo, _ := rados.NewConn()
+		_ = vsyo.ReadDefaultConfigFile()
+		_ = vsyo.Connect()
+		pools, _ := vsyo.ListPools()
+		polos := map[string]bool{}
 		for p := range pools {
 			o := pools[p]
-			Rconnect.Poolnames[o] = true
+			//switch Rconnect.Poolnames[o] {
+			//case false:
+			//	if o != "device_health_metrics" {
+			//		log.Println("Enabling new pool:", o)
+			//		Rconnect.Poolnames[o] = true
+			//	}
+			//}
+			if o != "device_health_metrics" {
+				polos[o] = true
+			}
 		}
-		time.Sleep(10 * time.Second)
+		eq := reflect.DeepEqual(Rconnect.Poolnames, polos)
+		//log.Println(eq)
+		switch eq {
+		case false:
+			Rconnect.Poolnames = polos
+			log.Println("Changes in RADOS pools are detected syncing. New pool list is:", Rconnect.Poolnames)
+		}
+
+		//log.Println(Rconnect.Poolnames)
+		//log.Println(polos)
+
+		vsyo.Shutdown()
+		time.Sleep(20 * time.Second)
 	}
 }
 
@@ -67,15 +90,15 @@ func ListPools() {
 //	if _, ok := Rconnect.Poolnames[pool]; ok {
 //		ioctx, e := Rconnect.Connection.OpenIOContext(pool)
 //		if e != nil {
-//			fmt.Println(e)
+//			log.Println(e)
 //		}
 //		xo, _ := ioctx.Stat(name)
 //		bytesOut := make([]byte, xo.Size)
 //		out, _ := ioctx.Read(name, bytesOut, 0)
-//		fmt.Println(out, pool, name, xo.Size)
+//		log.Println(out, pool, name, xo.Size)
 //		return bytesOut
 //	} else {
-//		fmt.Println("Pool " + pool + " does not exists")
+//		log.Println("Pool " + pool + " does not exists")
 //		return nil
 //	}
 //}
