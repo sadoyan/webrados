@@ -65,7 +65,8 @@ pass: admin
 **Remove File** HTTP ```DELETE:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}
 
 Configuration file is pretty simple and intuitive. 
-###Section **main**
+
+### **Section main**
 
 **listen :** IP port to bind.
 
@@ -89,9 +90,7 @@ Configuration file is pretty simple and intuitive.
 
 **logpath :** Path for log file.
 
-
-###Section **monitoring**
-
+### **Section monitoring**
 
 **enabled :** Enable/Disable monitoring.
 
