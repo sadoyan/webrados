@@ -7,7 +7,6 @@ import (
 	"github.com/ceph/go-ceph/rados"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"net/http"
 	"strconv"
@@ -18,11 +17,11 @@ import (
 func respCodewriter(f error, w http.ResponseWriter, r *http.Request) string {
 	if strings.Split(f.Error(), ",")[1] == " No such file or directory" {
 		w.WriteHeader(http.StatusNotFound)
-		log.Println(r.Method, f.Error(), r.URL.String())
+		wrados.Writelog(r.Method, f.Error(), r.URL.String())
 		return http.StatusText(404) + ": " + r.URL.String() + "\n"
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
-		log.Println(r.Method, f.Error(), r.URL.String())
+		wrados.Writelog(r.Method, f.Error(), r.URL.String())
 		return http.StatusText(500) + ": " + r.URL.String() + "\n"
 	}
 }
@@ -35,7 +34,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		randindex := rand.Intn(len(wrados.Rconnect.Connection))
 		ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 		if e != nil {
-			log.Println(e)
+			wrados.Writelog(e)
 		}
 		xo, lo := ioctx.Stat(name)
 		if lo == nil {
@@ -52,12 +51,12 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				bytesOut := make([]byte, mx)
 				_, err := ioctx.Read(name, bytesOut, of)
 				if err != nil {
-					log.Println(err)
+					wrados.Writelog(err)
 					break
 				}
 				_, er := w.Write(bytesOut)
 				if er != nil {
-					log.Println(er)
+					wrados.Writelog(er)
 					break
 				}
 				of = of + mx
@@ -65,12 +64,12 @@ func Get(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
-			log.Println("Method", r.Method, xo.Size, "bytes", name, "from", pool)
+			wrados.Writelog("Method", r.Method, xo.Size, "bytes", name, "from", pool)
 		} else {
 			_, _ = w.Write([]byte(respCodewriter(lo, w, r)))
 		}
 	} else {
-		log.Println("Pool " + pool + " does not exists")
+		wrados.Writelog("Pool " + pool + " does not exists")
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("500 Internal Server Error \n"))
 	}
@@ -130,22 +129,22 @@ func Put(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
-				log.Println("Method", r.Method, r.Header.Get("Content-Length"), "bytes", name, "to", pool)
+				wrados.Writelog("Method", r.Method, r.Header.Get("Content-Length"), "bytes", name, "to", pool)
 			} else {
-				log.Println("Invalid pool name")
+				wrados.Writelog("Invalid pool name")
 				w.WriteHeader(http.StatusInternalServerError)
 				_, _ = w.Write([]byte("500: Invalid pool name \n"))
 			}
 
 		} else {
-			log.Println("File path is too short")
+			wrados.Writelog("File path is too short")
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte("500: File path is too short \n"))
 		}
 	default:
 		w.WriteHeader(http.StatusForbidden)
 		msg := "Server is running in read only mode !"
-		log.Println(msg)
+		wrados.Writelog(msg)
 		_, _ = fmt.Fprintf(w, msg+"\n")
 
 	}
@@ -166,7 +165,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 				if f != nil {
 					_, _ = fmt.Fprintf(w, respCodewriter(f, w, r))
 				} else {
-					log.Println("Method", r.Method, name, "from", pool)
+					wrados.Writelog("Method", r.Method, name, "from", pool)
 					msg := http.StatusText(200) + ", Deleted: " + r.URL.String() + "\n"
 					_, _ = fmt.Fprintf(w, msg)
 				}
@@ -175,7 +174,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusForbidden)
 		msg := "Dangerous commands are disabled !"
-		log.Println(msg)
+		wrados.Writelog(msg)
 		_, _ = fmt.Fprintf(w, msg+"\n")
 	}
 }
@@ -195,7 +194,7 @@ func Head(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusForbidden)
 		msg := "Dangerous commands are disabled !"
-		log.Println(msg)
+		wrados.Writelog(msg)
 		_, _ = fmt.Fprintf(w, msg+"\n")
 	}
 }

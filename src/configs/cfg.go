@@ -28,6 +28,8 @@ type CfgType struct {
 	Readonly      bool
 	Monuser       string
 	Monpass       string
+	Logfile       string
+	LogStdout     bool
 }
 
 var Conf = &CfgType{
@@ -50,6 +52,8 @@ var Conf = &CfgType{
 	Radoconns:     0,
 	DangeZone:     false,
 	Readonly:      false,
+	LogStdout:     true,
+	Logfile:       "",
 }
 
 var authorized = make(map[string]string, 10)
@@ -92,7 +96,8 @@ func SetVarsik() {
 		log.Fatal("Please set numeric value to Radoconns")
 	}
 
-	//Conf.ServerAuth, _ = cfg.Section("main").Key("serverauth").Bool()
+	Conf.LogStdout = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("logfile").String()))
+	Conf.Logfile = cfg.Section("main").Key("logpath").String()
 	Conf.ServerUser = cfg.Section("main").Key("serveruser").String()
 	Conf.ServerPass = cfg.Section("main").Key("serverpass").String()
 

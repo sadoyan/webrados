@@ -4,12 +4,12 @@ import (
 	"bufio"
 	"configs"
 	"fmt"
-	"log"
 	"net/http"
 	"os"
 	"runtime"
 	"strings"
 	"time"
+	"wrados"
 )
 
 var users = map[string]string{
@@ -31,7 +31,7 @@ func authenticate(w http.ResponseWriter, r *http.Request) bool {
 		w.Header().Add("WWW-Authenticate", `Basic realm="Authentication Required"`)
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("No basic auth present\n"))
-		log.Println("401 Unauthorized: No basic auth present")
+		wrados.Writelog("401 Unauthorized: No basic auth present")
 		return false
 	}
 
@@ -39,7 +39,7 @@ func authenticate(w http.ResponseWriter, r *http.Request) bool {
 		w.Header().Add("WWW-Authenticate", `Basic realm="Give username and password"`)
 		w.WriteHeader(http.StatusUnauthorized)
 		_, _ = w.Write([]byte("Invalid Credentials\n"))
-		log.Println("401 Unauthorized: Invalid Credentials")
+		wrados.Writelog("401 Unauthorized: Invalid Credentials")
 		return false
 	}
 	w.WriteHeader(http.StatusOK)
@@ -52,14 +52,14 @@ func PopulateUsers() {
 		c, e := os.Open("users.txt")
 		content := bufio.NewScanner(c)
 		if e != nil {
-			log.Println(e)
+			wrados.Writelog(e)
 		}
 
 		for content.Scan() {
 			if len(content.Text()) > 0 {
 				z := strings.Split(content.Text(), " ")
 				if _, ok := users[z[0]]; !ok {
-					log.Println("Found new user: " + z[0] + ", enabling!")
+					wrados.Writelog("Found new user: " + z[0] + ", enabling!")
 					users[z[0]] = z[1]
 				}
 			}
@@ -138,7 +138,7 @@ func playmux1() {
 		ReadTimeout:  100 * time.Second,
 		WriteTimeout: 100 * time.Second,
 	}
-	log.Println("Starting monitoring instance at:", configs.Conf.MonAddress)
+	wrados.Writelog("Starting monitoring instance at:", configs.Conf.MonAddress)
 	_ = s2.ListenAndServe()
 
 }
@@ -147,7 +147,7 @@ func RunServer() {
 	if configs.Conf.Monenabled {
 		go playmux1()
 	}
-	log.Println("Starting WebRados server at:", configs.Conf.HttpAddress)
+	wrados.Writelog("Starting WebRados server at:", configs.Conf.HttpAddress)
 	runtime.Gosched()
 	playmux0()
 }

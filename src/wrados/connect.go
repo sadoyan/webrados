@@ -4,7 +4,6 @@ import "C"
 import (
 	"configs"
 	"github.com/ceph/go-ceph/rados"
-	"log"
 	"reflect"
 	"time"
 )
@@ -22,17 +21,18 @@ var Rconnect = &Radcon{
 func RadoConnect() {
 	conn, err := rados.NewConn()
 	if err != nil {
-		log.Println("Error when invoke a new connection:", err)
+
+		Writelog("Error when invoke a new connection:", err)
 	}
 	err = conn.ReadDefaultConfigFile()
 	if err != nil {
-		log.Println("Error when read default config file:", err)
+		Writelog("Error when read default config file:", err)
 	}
 	err = conn.Connect()
 	if err != nil {
-		log.Println("Error when connect:", err)
+		Writelog("Error when connect: ", err)
 	}
-	log.Println("Adding Rados connection to pool, Connected to Ceph cluster")
+	Writelog("Adding Rados connection to pool, Connected to Ceph cluster")
 	Rconnect.Connection = append(Rconnect.Connection, conn)
 }
 
@@ -57,7 +57,7 @@ func LsPools() {
 			//switch Rconnect.Poolnames[o] {
 			//case false:
 			//	if o != "device_health_metrics" {
-			//		log.Println("Enabling new pool:", o)
+			//		Writelog("Enabling new pool:", o)
 			//		Rconnect.Poolnames[o] = true
 			//	}
 			//}
@@ -66,15 +66,15 @@ func LsPools() {
 			}
 		}
 		eq := reflect.DeepEqual(Rconnect.Poolnames, polos)
-		//log.Println(eq)
+		//Writelog(eq)
 		switch eq {
 		case false:
 			Rconnect.Poolnames = polos
-			log.Println("Changes in RADOS pools are detected syncing. New pool list is:", Rconnect.Poolnames)
+			Writelog("Syncing RADOS pools. New pool list is:", Rconnect.Poolnames)
 		}
 
-		//log.Println(Rconnect.Poolnames)
-		//log.Println(polos)
+		//Writelog(Rconnect.Poolnames)
+		//Writelog(polos)
 
 		vsyo.Shutdown()
 		time.Sleep(20 * time.Second)
@@ -90,15 +90,15 @@ func LsPools() {
 //	if _, ok := Rconnect.Poolnames[pool]; ok {
 //		ioctx, e := Rconnect.Connection.OpenIOContext(pool)
 //		if e != nil {
-//			log.Println(e)
+//			Writelog(e)
 //		}
 //		xo, _ := ioctx.Stat(name)
 //		bytesOut := make([]byte, xo.Size)
 //		out, _ := ioctx.Read(name, bytesOut, 0)
-//		log.Println(out, pool, name, xo.Size)
+//		Writelog(out, pool, name, xo.Size)
 //		return bytesOut
 //	} else {
-//		log.Println("Pool " + pool + " does not exists")
+//		Writelog("Pool " + pool + " does not exists")
 //		return nil
 //	}
 //}
