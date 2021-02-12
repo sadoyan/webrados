@@ -12,6 +12,7 @@ GO-WebRados relies on C bindings of **Ceph** so in order to run this program you
 Running Ceph services on computer which hosts GO-WebRados is not required, it's even better to have a dedicated server or server for running GO-WebRados  
 
 ### **Download and install**
+---------
 
 You can build GO-WebRados from source or download precompiled binaries. If you already have installed Cephs packages and want to make things easy , 
 just download te GO-WebRados binary, make it executeable, and you are ready to run .  
@@ -30,6 +31,7 @@ export GOROOT=/path/to/your/go
 
 
 ### **Configuration**
+---------
 
 Configuration paramaters are stored in ```config.ini``` file, which should be in running directory.
 Sample config file, with reasoneable defaulr ships with source code. 
@@ -57,6 +59,7 @@ user: admin
 pass: admin
 ```
 ### **API**
+---------
 
 **Read File** HTTP ```GET:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}
 
@@ -67,6 +70,7 @@ pass: admin
 Configuration file is pretty simple and intuitive. 
 
 ### **Section main**
+---------
 
 **listen :** IP port to bind.
 
@@ -91,6 +95,7 @@ Configuration file is pretty simple and intuitive.
 **logpath :** Path for log file.
 
 ### **Section monitoring**
+---------
 
 **enabled :** Enable/Disable monitoring.
 
