@@ -105,3 +105,8 @@ Configuration file is pretty simple and intuitive.
 
 **pass :** Password for monitoring user.
 
+### **users.txt file**
+
+GO-Webrados can dynamically update users from ```users.txt``` file . 
+```users.txt``` should contain user and password divided by space in each line.
+GO-Webrados will periodically read ```uesrs.txt``` file and automatically update users in memory. 
