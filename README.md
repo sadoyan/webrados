@@ -36,7 +36,7 @@ export GOROOT=/path/to/your/go
 Configuration paramaters are stored in ```config.ini``` file, which should be in running directory.
 Sample config file, with reasoneable defaulr ships with source code. 
 
-```
+```ini
 [main]
 listen : 0.0.0.0:8080
 dispatchers : 20
