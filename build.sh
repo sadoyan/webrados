@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export GOROOT=/usr/local/go
-export export GOPATH=`pwd`
+export GOPATH=`pwd`
 
 rm -rf pkg/*
 rm -rf src/{github.com,golang.org,gopkg.in}
