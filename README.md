@@ -25,7 +25,7 @@ cd go-webrados
 export GOROOT=/path/to/your/go
 ./build.sh
 
-./webrados
+./webrados /path/to/config.ini
 ```
 
 

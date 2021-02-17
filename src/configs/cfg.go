@@ -4,6 +4,7 @@ import (
 	"flag"
 	"gopkg.in/ini.v1"
 	"log"
+	"os"
 	"strings"
 )
 
@@ -70,9 +71,15 @@ func stringTObool(key string, value string) bool {
 	return false
 }
 
+var Cfgfile = "config.ini"
+
 func SetVarsik() {
 
-	cfgFile := flag.String("config", "config.ini", "a string")
+	if len(os.Args) >= 2 {
+		Cfgfile = os.Args[1]
+	}
+
+	cfgFile := flag.String("config", Cfgfile, "a string")
 	flag.Parse()
 
 	cfg, err := ini.Load(*cfgFile)

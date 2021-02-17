@@ -20,7 +20,7 @@ func Writelog(line ...interface{}) {
 
 func LogToFile() {
 	if configs.Conf.LogStdout {
-		fmt.Println("WebRados is started. Writing logs to", configs.Conf.Logfile)
+		fmt.Println("WebRados is started.", "Config file", configs.Cfgfile+",", "Logfile", configs.Conf.Logfile)
 	}
 
 	f, err := os.OpenFile(configs.Conf.Logfile, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
