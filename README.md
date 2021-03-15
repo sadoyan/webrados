@@ -94,6 +94,10 @@ Configuration file is pretty simple and intuitive.
 
 **logpath :** Path for log file.
 
+**allpools:** yes/no . If yes program will scan ceph and enable access via web to all pool 
+
+**poollist:** Works only if **allpools** is set to **no**. Should contain coma separated list of pools which should be accesible via webrados program  
+
 ### **Section monitoring**
 ---------
 

@@ -45,60 +45,35 @@ func LsPools() {
 				n = n + 1
 			}
 		}
-		//randindex := rand.Intn(configs.Conf.Radoconns)
-		//pools, _ := Rconnect.Connection[randindex].ListPools()
 		vsyo, _ := rados.NewConn()
 		_ = vsyo.ReadDefaultConfigFile()
 		_ = vsyo.Connect()
+
 		pools, _ := vsyo.ListPools()
 		polos := map[string]bool{}
-		for p := range pools {
-			o := pools[p]
-			//switch Rconnect.Poolnames[o] {
-			//case false:
-			//	if o != "device_health_metrics" {
-			//		Writelog("Enabling new pool:", o)
-			//		Rconnect.Poolnames[o] = true
-			//	}
-			//}
-			if o != "device_health_metrics" {
+		switch configs.Conf.AllPools {
+		case true:
+			for p := range pools {
+				o := pools[p]
+				if o != "device_health_metrics" {
+					polos[o] = true
+				}
+			}
+		case false:
+			for p := range configs.Conf.PoolList {
+				o := configs.Conf.PoolList[p]
 				polos[o] = true
 			}
+
 		}
 		eq := reflect.DeepEqual(Rconnect.Poolnames, polos)
-		//Writelog(eq)
 		switch eq {
 		case false:
 			Rconnect.Poolnames = polos
 			Writelog("Syncing RADOS pools. New pool list is:", Rconnect.Poolnames)
 		}
 
-		//Writelog(Rconnect.Poolnames)
-		//Writelog(polos)
-
 		vsyo.Shutdown()
 		time.Sleep(20 * time.Second)
 	}
 }
-
-//func PutData(pool string, name string, input []byte) {
-//	ioctx, _ := Rconnect.Connection.OpenIOContext(pool)
-//	_ = ioctx.Write(name, input, 0)
-//}
-//
-//func GetData(pool string, name string) []byte {
-//	if _, ok := Rconnect.Poolnames[pool]; ok {
-//		ioctx, e := Rconnect.Connection.OpenIOContext(pool)
-//		if e != nil {
-//			Writelog(e)
-//		}
-//		xo, _ := ioctx.Stat(name)
-//		bytesOut := make([]byte, xo.Size)
-//		out, _ := ioctx.Read(name, bytesOut, 0)
-//		Writelog(out, pool, name, xo.Size)
-//		return bytesOut
-//	} else {
-//		Writelog("Pool " + pool + " does not exists")
-//		return nil
-//	}
-//}

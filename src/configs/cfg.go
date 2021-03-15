@@ -31,6 +31,8 @@ type CfgType struct {
 	Monpass       string
 	Logfile       string
 	LogStdout     bool
+	AllPools      bool
+	PoolList      []string
 }
 
 var Conf = &CfgType{
@@ -55,6 +57,8 @@ var Conf = &CfgType{
 	Readonly:      false,
 	LogStdout:     true,
 	Logfile:       "",
+	AllPools:      true,
+	PoolList:      []string{},
 }
 
 var authorized = make(map[string]string, 10)
@@ -123,6 +127,15 @@ func SetVarsik() {
 	Conf.AuthWrite = stringTObool("authwrite", strings.ToLower(cfg.Section("main").Key("authwrite").String()))
 	Conf.AuthRead = stringTObool("authread", strings.ToLower(cfg.Section("main").Key("authread").String()))
 	Conf.Readonly = stringTObool("readonly", strings.ToLower(cfg.Section("main").Key("readonly").String()))
+
+	Conf.AllPools = stringTObool("allpools", strings.ToLower(cfg.Section("main").Key("allpools").String()))
+
+	if !Conf.AllPools {
+		x := cfg.Section("main").Key("poollist").String()
+		z := strings.Replace(x, " ", "", -1)
+		zs := strings.Split(z, ",")
+		Conf.PoolList = zs
+	}
 
 	switch stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String())) {
 	case true:
