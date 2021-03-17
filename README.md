@@ -41,7 +41,7 @@ Sample config file, with reasoneable defaulr ships with source code.
 listen : 0.0.0.0:8080
 dispatchers : 20
 serveruser : admin
-serverpass : SecretPaSs
+serverpass : 261a5983599fd57a016122ec85599ec4
 uploadmaxpart : 52428800
 dangerzone : yes
 readonly : no
@@ -78,7 +78,7 @@ Configuration file is pretty simple and intuitive.
 
 **serveruser :** Static user.
 
-**serverpass :** Password for static user.
+**serverpass :** MD5 hash of password for static user. It can be the output of `echo -n SecretPaSs | md5sum |awk '{print $1}'`
 
 **dangerzone :** Enable destructive methods and commands (DELETE).
 
@@ -96,7 +96,7 @@ Configuration file is pretty simple and intuitive.
 
 **allpools:** yes/no . If yes program will scan ceph and enable access via web to all pool 
 
-**poollist:** Works only if **allpools** is set to **no**. Should contain coma separated list of pools which should be accesible via webrados program  
+**poollist:** Works only if **allpools** is set to **no**. Coma separated list of pools which should be accesible via webrados program  
 
 ### **Section monitoring**
 ---------
@@ -112,5 +112,6 @@ Configuration file is pretty simple and intuitive.
 ### **users.txt file**
 
 GO-Webrados can dynamically update users from ```users.txt``` file . 
-```users.txt``` should contain user and password divided by space in each line.
+```users.txt``` should contain user and md5hash of password divided by space in each line.  
+`echo -n SecretPaSs | md5sum |awk '{print $1}'` on Linux systemd will output md5hash for using it as password in `users.txt` file 
 GO-Webrados will periodically read ```uesrs.txt``` file and automatically update users in memory. 

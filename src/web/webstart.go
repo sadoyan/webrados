@@ -3,6 +3,8 @@ package web
 import (
 	"bufio"
 	"configs"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"os"
@@ -17,11 +19,16 @@ var users = map[string]string{
 }
 
 func isAuthorised(username, password string) bool {
+
+	md5HashInBytes := md5.Sum([]byte(password))
+	md5HashInString := hex.EncodeToString(md5HashInBytes[:])
+
 	pass, ok := users[username]
+
 	if !ok {
 		return false
 	}
-	return password == pass
+	return md5HashInString == pass
 }
 
 func authenticate(w http.ResponseWriter, r *http.Request) bool {
@@ -63,12 +70,11 @@ func PopulateUsers() {
 					users[z[0]] = z[1]
 				}
 			}
-			//fmt.Println(":", content.Text())
+			//fmt.Println(content.Text())
 		}
 		_ = c.Close()
 		time.Sleep(10 * time.Second)
 	}
-	//fmt.Println(users)
 }
 
 // -------------------------------------------------------------------------- //
@@ -132,6 +138,7 @@ func playmux1() {
 	mux1 := http.NewServeMux()
 	mux1.HandleFunc("/", mxhandl)
 	users[configs.Conf.ServerUser] = configs.Conf.ServerPass
+
 	s2 := http.Server{
 		Addr:         configs.Conf.MonAddress,
 		Handler:      mux1,

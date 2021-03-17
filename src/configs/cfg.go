@@ -127,7 +127,6 @@ func SetVarsik() {
 	Conf.AuthWrite = stringTObool("authwrite", strings.ToLower(cfg.Section("main").Key("authwrite").String()))
 	Conf.AuthRead = stringTObool("authread", strings.ToLower(cfg.Section("main").Key("authread").String()))
 	Conf.Readonly = stringTObool("readonly", strings.ToLower(cfg.Section("main").Key("readonly").String()))
-
 	Conf.AllPools = stringTObool("allpools", strings.ToLower(cfg.Section("main").Key("allpools").String()))
 
 	if !Conf.AllPools {

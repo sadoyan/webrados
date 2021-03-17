@@ -5,6 +5,8 @@ import (
 	"configs"
 	"github.com/ceph/go-ceph/rados"
 	"reflect"
+	"strconv"
+	"strings"
 	"time"
 )
 
@@ -21,7 +23,6 @@ var Rconnect = &Radcon{
 func RadoConnect() {
 	conn, err := rados.NewConn()
 	if err != nil {
-
 		Writelog("Error when invoke a new connection:", err)
 	}
 	err = conn.ReadDefaultConfigFile()
@@ -32,7 +33,6 @@ func RadoConnect() {
 	if err != nil {
 		Writelog("Error when connect: ", err)
 	}
-	Writelog("Adding Rados connection to pool, Connected to Ceph cluster")
 	Rconnect.Connection = append(Rconnect.Connection, conn)
 }
 
@@ -40,15 +40,15 @@ func LsPools() {
 	n := 0
 	for {
 		if len(Rconnect.Connection) < configs.Conf.Radoconns {
-			for n <= configs.Conf.Radoconns {
+			for n < configs.Conf.Radoconns {
 				RadoConnect()
 				n = n + 1
 			}
+			Writelog("Created", strconv.Itoa(n), "connections to Ceph cluster")
 		}
 		vsyo, _ := rados.NewConn()
 		_ = vsyo.ReadDefaultConfigFile()
 		_ = vsyo.Connect()
-
 		pools, _ := vsyo.ListPools()
 		polos := map[string]bool{}
 		switch configs.Conf.AllPools {
@@ -64,15 +64,17 @@ func LsPools() {
 				o := configs.Conf.PoolList[p]
 				polos[o] = true
 			}
-
 		}
 		eq := reflect.DeepEqual(Rconnect.Poolnames, polos)
 		switch eq {
 		case false:
 			Rconnect.Poolnames = polos
-			Writelog("Syncing RADOS pools. New pool list is:", Rconnect.Poolnames)
+			lst := []string{}
+			for t := range Rconnect.Poolnames {
+				lst = append(lst, t)
+			}
+			Writelog("Syncing RADOS pools. New pool list is:", strings.Join(lst, ", "))
 		}
-
 		vsyo.Shutdown()
 		time.Sleep(20 * time.Second)
 	}
