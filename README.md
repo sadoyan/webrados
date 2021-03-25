@@ -61,53 +61,42 @@ pass: admin
 ### **API**
 ---------
 
-**Read File** HTTP ```GET:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}
-
-**Upload File** HTTP ```POST, PUT:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}
-
-**Remove File** HTTP ```DELETE:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}
+| **Name** | **Description** |
+| ------------- | ------------- |
+|**Read File**|HTTP ```GET:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}|
+|**Read File**|HTTP ```GET:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}|
+|**Upload File**|HTTP ```POST, PUT:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}|
+|**Remove File**|HTTP ```DELETE:``` http://{BINDADDRESS}/{POOLNAME}/{FILENAME}|
 
 Configuration file is pretty simple and intuitive. 
 
 ### **Section main**
 ---------
 
-**listen :** IP port to bind.
-
-**dispatchers :** Number of threads for webserver.
-
-**serveruser :** Static user.
-
-**serverpass :** MD5 hash of password for static user. It can be the output of `echo -n SecretPaSs | md5sum |awk '{print $1}'`
-
-**dangerzone :** Enable destructive methods and commands (DELETE).
-
-**readonly :** Enable readonly mode. If 'yes' only GET is allowed.
-
-**authread :** Require authentication for GET only.
-
-**authwrite :** Require authentication for POST/PUT/DELETE.
-
-**radoconns :** Number of connection to CEPH.
-
-**logfile :** Log to file, if 'no' logs are sent to stdout.
-
-**logpath :** Path for log file.
-
-**allpools:** yes/no . If yes program will scan ceph and enable access via web to all pool 
-
-**poollist:** Works only if **allpools** is set to **no**. Coma separated list of pools which should be accesible via webrados program  
+| **Name**  | **Description** |
+| ------------- | ------------- |
+|**listen :**|IP port to bind.|
+|**dispatchers :**|Number of threads for webserver.|
+|**serveruser :**|Static user.|
+|**serverpass :**|MD5 hash of password for static user. It can be the output of `echo -n SecretPaSs | md5sum |awk '{print $1}'`|
+|**dangerzone :**|Enable destructive methods and commands (DELETE).|
+|**readonly :**|Enable readonly mode. If 'yes' only GET is allowed.|
+|**authread :**|Require authentication for GET only.|
+|**authwrite :**|Require authentication for POST/PUT/DELETE.|
+|**radoconns :**|Number of connection to CEPH.|
+|**logfile :**|Log to file, if 'no' logs are sent to stdout.|
+|**logpath :**|Path for log file.|
+|**allpools:**|yes/no . If yes program will scan ceph and enable access via web to all pool| 
+|**poollist:**|Works only if **allpools** is set to **no**. Coma separated list of pools which should be accesible via webrados program|  
 
 ### **Section monitoring**
 ---------
-
-**enabled :** Enable/Disable monitoring.
-
-**url :**  IP address and port for minitoring interface.
-
-**user :** Monitoring user.
-
-**pass :** Password for monitoring user.
+| **Name**  | **Description** |
+| ------------- | ------------- |
+|**enabled :**|Enable/Disable monitoring.|
+|**url :**|IP address and port for minitoring interface.|
+|**user :**|Monitoring user.|
+|**pass :**|Password for monitoring user.|
 
 ### **users.txt file**
 
