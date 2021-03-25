@@ -38,22 +38,22 @@ Sample config file, with reasoneable defaulr ships with source code.
 
 ```ini
 [main]
-listen : 0.0.0.0:8080
-dispatchers : 20
-serveruser : admin
-serverpass : 261a5983599fd57a016122ec85599ec4
-uploadmaxpart : 52428800
-dangerzone : yes
-readonly : no
-authread : no
-authwrite : yes
-radoconns : 20
-logfile : yes
+listen 0.0.0.0:8080
+dispatchers 20
+serveruser admin
+serverpass 261a5983599fd57a016122ec85599ec4
+uploadmaxpart 52428800
+dangerzone yes
+readonly no
+authread no
+authwrite yes
+radoconns 20
+logfile yes
 logpath: /opt/webrados.log
 
 
 [monitoring]
-enabled : true
+enabled true
 url:  127.0.0.1:9090
 user: admin
 pass: admin
@@ -75,17 +75,17 @@ Configuration file is pretty simple and intuitive.
 
 | **Name**  | **Description** |
 | ------------- | ------------- |
-|**listen :**|IP port to bind.|
-|**dispatchers :**|Number of threads for webserver.|
-|**serveruser :**|Static user.|
-|**serverpass :**|MD5 hash of password for static user. It can be the output of `echo -n SecretPaSs | md5sum |awk '{print $1}'`|
-|**dangerzone :**|Enable destructive methods and commands (DELETE).|
-|**readonly :**|Enable readonly mode. If 'yes' only GET is allowed.|
-|**authread :**|Require authentication for GET only.|
-|**authwrite :**|Require authentication for POST/PUT/DELETE.|
-|**radoconns :**|Number of connection to CEPH.|
-|**logfile :**|Log to file, if 'no' logs are sent to stdout.|
-|**logpath :**|Path for log file.|
+|**listen**|IP port to bind.|
+|**dispatchers**|Number of threads for webserver.|
+|**serveruser**|Static user.|
+|**serverpass**|MD5 hash of password for static user. It can be the output of `echo -n SecretPaSs | md5sum |awk '{print $1}'`|
+|**dangerzone**|Enable destructive methods and commands (DELETE).|
+|**readonly**|Enable readonly mode. If 'yes' only GET is allowed.|
+|**authread**|Require authentication for GET only.|
+|**authwrite**|Require authentication for POST/PUT/DELETE.|
+|**radoconns**|Number of connection to CEPH.|
+|**logfile**|Log to file, if 'no' logs are sent to stdout.|
+|**logpath**|Path for log file.|
 |**allpools:**|yes/no . If yes program will scan ceph and enable access via web to all pool| 
 |**poollist:**|Works only if **allpools** is set to **no**. Coma separated list of pools which should be accesible via webrados program|  
 
@@ -93,10 +93,10 @@ Configuration file is pretty simple and intuitive.
 ---------
 | **Name**  | **Description** |
 | ------------- | ------------- |
-|**enabled :**|Enable/Disable monitoring.|
-|**url :**|IP address and port for minitoring interface.|
-|**user :**|Monitoring user.|
-|**pass :**|Password for monitoring user.|
+|**enabled**|Enable/Disable monitoring.|
+|**url**|IP address and port for minitoring interface.|
+|**user**|Monitoring user.|
+|**pass**|Password for monitoring user.|
 
 ### **users.txt file**
 
