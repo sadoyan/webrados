@@ -35,3 +35,7 @@ bin/*
 pkg/*
 shpo/
 shpo/*
+src/github.com/*
+src/gopkg.in/*
+src/golang.org/*
+
