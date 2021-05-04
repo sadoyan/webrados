@@ -51,7 +51,6 @@ radoconns 20
 logfile yes
 logpath: /opt/webrados.log
 
-
 [monitoring]
 enabled true
 url:  127.0.0.1:9090
