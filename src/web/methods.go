@@ -64,7 +64,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 					break
 				}
 			}
-			wrados.Writelog("Method", r.Method, xo.Size, "bytes", name, "from", pool)
+			wrados.Writelog(r.Method, xo.Size, "bytes", name, "from", pool)
 		} else {
 			_, _ = w.Write([]byte(respCodewriter(lo, w, r)))
 		}
@@ -129,7 +129,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 						}
 					}
 				}
-				wrados.Writelog("Method", r.Method, r.Header.Get("Content-Length"), "bytes", name, "to", pool)
+				wrados.Writelog(r.Method, r.Header.Get("Content-Length"), "bytes", name, "to", pool)
 			} else {
 				wrados.Writelog("Invalid pool name")
 				w.WriteHeader(http.StatusInternalServerError)
@@ -165,7 +165,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 				if f != nil {
 					_, _ = fmt.Fprintf(w, respCodewriter(f, w, r))
 				} else {
-					wrados.Writelog("Method", r.Method, name, "from", pool)
+					wrados.Writelog(r.Method, name, "from", pool)
 					msg := http.StatusText(200) + ", Deleted: " + r.URL.String() + "\n"
 					_, _ = fmt.Fprintf(w, msg)
 				}

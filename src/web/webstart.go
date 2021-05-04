@@ -79,36 +79,41 @@ func PopulateUsers() {
 
 // -------------------------------------------------------------------------- //
 func dynHandler(w http.ResponseWriter, r *http.Request) {
-
-	//fmt.Println(users)
 	switch r.Method {
 	case "GET":
 		if configs.Conf.AuthRead {
 			if authenticate(w, r) {
+				momo.incrementGet()
 				Get(w, r)
 			}
 		} else {
+			momo.incrementGet()
 			Get(w, r)
 		}
 	case "POST", "PUT":
 		if configs.Conf.AuthWrite {
 			if authenticate(w, r) {
+				momo.incrementPost()
 				Put(w, r)
 			}
 		} else {
+			momo.incrementPost()
 			Put(w, r)
+
 		}
 
 	case "DELETE":
 		if configs.Conf.AuthWrite {
 			if authenticate(w, r) {
+				momo.incrementDel()
 				Del(w, r)
 			}
 		} else {
+			momo.incrementDel()
 			Del(w, r)
 		}
-		//Del(w, r)
 	case "HEAD":
+		momo.incrementHead()
 		Head(w, r)
 	default:
 		_, _ = fmt.Fprintf(w, "Sorry, only GET, HEAD, POST, PUT and DELETE methods are supported.\n")

@@ -26,9 +26,32 @@ type metrics struct {
 	NumForcedGC  uint32 `json:"forcegc,int"`
 	PauseTotalNs uint64 `json:"pausetotal,int"`
 	Goroutines   int    `json:"goroutines,int"`
+	GetCount     int    `json:"getcount,int"`
+	PostCount    int    `json:"postcount,int"`
+	DelCount     int    `json:"delcount,int"`
+	HeadCount    int    `json:"headcount,int"`
+}
+
+var momo = &metrics{PostCount: 0, GetCount: 0, DelCount: 0, HeadCount: 0}
+
+func (m *metrics) incrementPost() {
+	m.PostCount++
+}
+
+func (m *metrics) incrementGet() {
+	m.GetCount++
+}
+
+func (m *metrics) incrementDel() {
+	m.DelCount++
+}
+
+func (m *metrics) incrementHead() {
+	m.HeadCount++
 }
 
 func printStats() (s string) {
+
 	runtime.ReadMemStats(&m)
 	u := &metrics{}
 
@@ -45,7 +68,11 @@ func printStats() (s string) {
 	u.PauseTotalNs = m.PauseTotalNs
 	u.NumForcedGC = m.NumForcedGC
 	u.Goroutines = runtime.NumGoroutine()
-
+	u.LastGC = m.LastGC
+	u.PostCount = momo.PostCount
+	u.GetCount = momo.GetCount
+	u.HeadCount = momo.HeadCount
+	u.DelCount = momo.DelCount
 	//result, _ := json.Marshal(u)
 	result, _ := json.MarshalIndent(u, "", "    ")
 
