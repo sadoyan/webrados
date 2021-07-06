@@ -146,7 +146,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							_ = ioct.Write(name, mukuch, xo.Size)
 
 							fileSegments = append(fileSegments, name)
-							fmt.Println("Writing Segment:", xxx, "to file", name, pool)
+							//fmt.Println("Writing Segment:", xxx, "to file", name, pool)
 							xxx = xxx + 1
 
 							break
@@ -157,14 +157,14 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							_ = ioct.Write(name, mukuch, xo.Size)
 
 							fileSegments = append(fileSegments, name)
-							fmt.Println("Writing Segment:", xxx, "to file", name, pool)
+							//fmt.Println("Writing Segment:", xxx, "to file", name, pool)
 							xxx = xxx + 1
 
 							mukuch = nil
 						}
 					}
 
-					fmt.Println("Created File", name, "In", pool)
+					log.Println("Created File", name, "In", pool)
 					fmeta := strings.Join(fileSegments, ",")
 					_, err := metadata.RedClient(pool+"/"+name, "set", fmeta)
 					if err != nil {

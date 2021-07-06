@@ -2,7 +2,6 @@ package metadata
 
 import (
 	"context"
-	"fmt"
 	"github.com/go-redis/redis"
 )
 
@@ -30,8 +29,8 @@ func RedClient(filename string, ops string, id string) (string, error) {
 		}
 		return id, nil
 	case "del":
-		h := rdb.Del(ctx, filename)
-		fmt.Println(h)
+		_ = rdb.Del(ctx, filename)
+		//fmt.Println(h)
 		return "Done", nil
 	}
 
