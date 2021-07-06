@@ -77,7 +77,6 @@ func PopulateUsers() {
 	}
 }
 
-// -------------------------------------------------------------------------- //
 func dynHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
@@ -99,9 +98,7 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 		} else {
 			momo.incrementPost()
 			Put(w, r)
-
 		}
-
 	case "DELETE":
 		if configs.Conf.AuthWrite {
 			if authenticate(w, r) {
@@ -112,9 +109,9 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 			momo.incrementDel()
 			Del(w, r)
 		}
-	case "HEAD":
-		momo.incrementHead()
-		Head(w, r)
+	//case "HEAD":
+	//	momo.incrementHead()
+	//	Head(w, r)
 	default:
 		_, _ = fmt.Fprintf(w, "Sorry, only GET, HEAD, POST, PUT and DELETE methods are supported.\n")
 	}
@@ -134,7 +131,7 @@ func playmux0() {
 	_ = s1.ListenAndServe()
 }
 
-func mxhandl(w http.ResponseWriter, r *http.Request) {
+func mxhandl(w http.ResponseWriter, _ *http.Request) {
 	mz := printStats()
 	_, _ = fmt.Fprintln(w, mz)
 }

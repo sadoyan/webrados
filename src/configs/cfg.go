@@ -14,25 +14,26 @@ type CfgType struct {
 	Monenabled       bool
 	DispatchersCount int
 	//ServerAuth       bool
-	AuthRead      bool
-	AuthWrite     bool
-	ServerUser    string
-	ServerPass    string
-	ClientAuth    bool
-	ClientUser    string
-	ClientPass    string
-	InternalQueue bool
-	queue         chan string
-	Uploadmaxpart int
-	Radoconns     int
-	DangeZone     bool
-	Readonly      bool
-	Monuser       string
-	Monpass       string
-	Logfile       string
-	LogStdout     bool
-	AllPools      bool
-	PoolList      []string
+	AuthRead         bool
+	AuthWrite        bool
+	ServerUser       string
+	ServerPass       string
+	ClientAuth       bool
+	ClientUser       string
+	ClientPass       string
+	InternalQueue    bool
+	queue            chan string
+	Uploadmaxpart    int
+	Radoconns        int
+	DangeZone        bool
+	Readonly         bool
+	Monuser          string
+	Monpass          string
+	Logfile          string
+	LogStdout        bool
+	AllPools         bool
+	PoolList         []string
+	OSDMaxObjectSize int
 }
 
 var Conf = &CfgType{
@@ -40,25 +41,26 @@ var Conf = &CfgType{
 	MonAddress:       "127.0.0.1:8989",
 	DispatchersCount: 20,
 	//ServerAuth:       false,
-	AuthRead:      false,
-	AuthWrite:     false,
-	ServerUser:    "",
-	ServerPass:    "",
-	ClientAuth:    false,
-	ClientUser:    "",
-	ClientPass:    "",
-	InternalQueue: false,
-	Monenabled:    false,
-	Monuser:       "",
-	Monpass:       "",
-	Uploadmaxpart: 0,
-	Radoconns:     0,
-	DangeZone:     false,
-	Readonly:      false,
-	LogStdout:     true,
-	Logfile:       "",
-	AllPools:      true,
-	PoolList:      []string{},
+	AuthRead:         false,
+	AuthWrite:        false,
+	ServerUser:       "",
+	ServerPass:       "",
+	ClientAuth:       false,
+	ClientUser:       "",
+	ClientPass:       "",
+	InternalQueue:    false,
+	Monenabled:       false,
+	Monuser:          "",
+	Monpass:          "",
+	Uploadmaxpart:    0,
+	Radoconns:        0,
+	DangeZone:        false,
+	Readonly:         false,
+	LogStdout:        true,
+	Logfile:          "",
+	AllPools:         true,
+	PoolList:         []string{},
+	OSDMaxObjectSize: 0,
 }
 
 var authorized = make(map[string]string, 10)

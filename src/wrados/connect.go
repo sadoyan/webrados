@@ -36,6 +36,8 @@ func RadoConnect() {
 	Rconnect.Connection = append(Rconnect.Connection, conn)
 }
 
+//var OSDMaxObjectSize int
+
 func LsPools() {
 	n := 0
 	for {
@@ -50,6 +52,11 @@ func LsPools() {
 		_ = vsyo.ReadDefaultConfigFile()
 		_ = vsyo.Connect()
 		pools, _ := vsyo.ListPools()
+
+		osdMaxObjectSize, _ := vsyo.GetConfigOption("osd max object size")
+		s, _ := strconv.Atoi(osdMaxObjectSize)
+		configs.Conf.OSDMaxObjectSize = s
+
 		polos := map[string]bool{}
 		switch configs.Conf.AllPools {
 		case true:

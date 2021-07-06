@@ -8,4 +8,6 @@ rm -rf src/{github.com,golang.org,gopkg.in}
 go get github.com/ceph/go-ceph
 go get gopkg.in/ini.v1
 go get golang.org/x/sys/unix
+go get go.opentelemetry.io/otel
+go get github.com/go-redis/redis
 go build src/webrados.go
