@@ -1,13 +1,14 @@
 package metadata
 
 import (
+	"configs"
 	"context"
 	"github.com/go-redis/redis"
 )
 
 func RedClient(filename string, ops string, id string) (string, error) {
 	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
+		Addr:     configs.Conf.RedisServer,
 		Password: "", // no password set
 		DB:       0,  // use default DB
 	})

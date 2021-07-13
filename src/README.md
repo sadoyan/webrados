@@ -85,9 +85,10 @@ Configuration file is pretty simple and intuitive.
 |**radoconns**|Number of connection to CEPH.|
 |**logfile**|Log to file, if 'no' logs are sent to stdout.|
 |**logpath**|Path for log file.|
-|**allpools:**|yes/no . If yes program will scan ceph and enable access via web to all pool| 
-|**poollist:**|Works only if **allpools** is set to **no**. Coma separated list of pools which should be accesible via webrados program|  
-
+|**uploadmaxpart**| Maximum file chunk size (Sbould be amaller or erqual ro `osd max object size`).| 
+|**allpools:**|yes/no . If yes program will scan ceph and enable access via web to all pool.| 
+|**poollist:**|Works only if **allpools** is set to **no**. Coma separated list of pools which should be accesible via webrados program.|  
+|**redis**|IP address and port of Redis server.|
 ### **Section monitoring**
 ---------
 | **Name**  | **Description** |
@@ -103,3 +104,26 @@ GO-Webrados can dynamically update users from ```users.txt``` file .
 ```users.txt``` should contain user and md5hash of password divided by space in each line.  
 `echo -n SecretPaSs | md5sum |awk '{print $1}'` on Linux systemd will output md5hash for using it as password in `users.txt` file 
 GO-Webrados will periodically read ```uesrs.txt``` file and automatically update users in memory. 
+
+### **Large files**
+
+In order to be able to store large file in RADOS directly files needs to be split to smaller chunks. 
+GO-WebRados will automatically set maximum chunk size to  **uploadmaxpart** and split files in accordance to that. 
+For this GO-WebRados requires Redis servers to store metadata for big files. (Make sure to keep Redis database safe and periodically back it up.)
+Redis will store metadata only for large files. Small files are to split and not require special metadata server.  
+
+### **Special commands**
+
+**HTTP GET** http://{BINDADDRESS}/{POOLNAME}/{FILENAME}?info 
+Return information about requested file in json format. 
+
+```curl -s  http://ceph1:8080/bublics/katana.mp4?info | python -mjson.tool```
+
+```json
+{
+    "name": "katana.mp4",
+    "pool": "bublics",
+    "segments": "11",
+    "size": "471861144"
+}
+```

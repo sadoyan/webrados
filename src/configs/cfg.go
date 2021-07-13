@@ -34,6 +34,7 @@ type CfgType struct {
 	AllPools         bool
 	PoolList         []string
 	OSDMaxObjectSize int
+	RedisServer      string
 }
 
 var Conf = &CfgType{
@@ -61,6 +62,7 @@ var Conf = &CfgType{
 	AllPools:         true,
 	PoolList:         []string{},
 	OSDMaxObjectSize: 0,
+	RedisServer:      "127.0.0.1:6379",
 }
 
 var authorized = make(map[string]string, 10)
@@ -148,5 +150,5 @@ func SetVarsik() {
 	case false:
 		Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
 	}
-
+	Conf.RedisServer = cfg.Section("main").Key("redis").String()
 }

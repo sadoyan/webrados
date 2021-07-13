@@ -3,6 +3,7 @@ package web
 import (
 	"bufio"
 	"configs"
+	"encoding/json"
 	"fmt"
 	"github.com/ceph/go-ceph/rados"
 	"io"
@@ -48,63 +49,102 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		if e != nil {
 			wrados.Writelog(e)
 		}
+
 		xo, lo := ioctx.Stat(name)
+
 		ss, eror := metadata.RedClient(pool+"/"+name, "get", "")
 		filez := []string{}
 
-		readFilez := func(name string) {
-			if lo == nil {
-				of := uint64(0)
-				mx := uint64(20480)
-				if xo.Size-of < mx {
-					mx = xo.Size
-				}
-
-				for {
-					if xo.Size-of <= mx {
-						mx = xo.Size - of
-					}
-					bytesOut := make([]byte, mx)
-					_, err := ioctx.Read(name, bytesOut, of)
-					if err != nil {
-						wrados.Writelog(err)
-						break
-					}
-					_, er := w.Write(bytesOut)
-					if er != nil {
-						wrados.Writelog(er)
-						break
-					}
-					of = of + mx
-					if of >= xo.Size {
-						break
-					}
-				}
-				wrados.Writelog(r.Method, xo.Size, "bytes", r.URL, "from", pool)
+		_, infostat := r.URL.Query()["info"]
+		if infostat {
+			if lo != nil {
+				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write([]byte(lo.Error()))
+				_, _ = w.Write([]byte("\n"))
 			} else {
-				_, _ = w.Write([]byte(respCodewriter(lo, w, r)))
-			}
-		}
+				if eror == nil {
+					ns := strings.Split(ss, ",")
+					numbSegments := strconv.Itoa(len(ns))
 
-		if eror != nil {
-			filez = append(filez, name)
-			for file := range filez {
-				w.Header().Set("Content-Length", strconv.FormatUint(xo.Size, 10))
-				readFilez(filez[file])
+					fileInfo := &FileInfo{
+						Size:     ns[len(ns)-1],
+						Pool:     pool,
+						Segments: numbSegments,
+						Name:     name,
+					}
+					b, _ := json.Marshal(fileInfo)
+					_, _ = w.Write(b)
+					_, _ = w.Write([]byte("\n"))
+				} else {
+					fileInfo := &FileInfo{
+						Size:     strconv.Itoa(int(xo.Size)),
+						Pool:     pool,
+						Segments: "1",
+						Name:     name,
+					}
+					b, _ := json.Marshal(fileInfo)
+					_, _ = w.Write(b)
+					_, _ = w.Write([]byte("\n"))
+
+				}
 			}
+
 		} else {
-			var fsize uint64
-			fileparts := strings.Split(ss, ",")
-			for filepart := range fileparts {
-				name = fileparts[filepart]
-				xo, _ = ioctx.Stat(name)
-				fsize = fsize + xo.Size
+			readFilez := func(name string) {
+				if lo == nil {
+					of := uint64(0)
+					mx := uint64(20480)
+					if xo.Size-of < mx {
+						mx = xo.Size
+					}
+
+					for {
+						if xo.Size-of <= mx {
+							mx = xo.Size - of
+						}
+						bytesOut := make([]byte, mx)
+						_, err := ioctx.Read(name, bytesOut, of)
+						if err != nil {
+							wrados.Writelog(err)
+							break
+						}
+						_, er := w.Write(bytesOut)
+						if er != nil {
+							wrados.Writelog(er)
+							break
+						}
+						of = of + mx
+						if of >= xo.Size {
+							break
+						}
+					}
+					wrados.Writelog(r.Method, xo.Size, "bytes", r.URL, "from", pool)
+				} else {
+					_, _ = w.Write([]byte(respCodewriter(lo, w, r)))
+				}
 			}
-			w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
-			for filepart := range fileparts {
-				name = fileparts[filepart]
-				xo, _ = ioctx.Stat(name)
-				readFilez(fileparts[filepart])
+
+			if eror != nil {
+				filez = append(filez, name)
+				for file := range filez {
+					w.Header().Set("Content-Length", strconv.FormatUint(xo.Size, 10))
+					readFilez(filez[file])
+				}
+			} else {
+				var fsize uint64
+				fileparts := strings.Split(ss, ",")
+				fileparts = fileparts[:len(fileparts)-1]
+				for filepart := range fileparts {
+					name = fileparts[filepart]
+					xo, _ = ioctx.Stat(name)
+					fsize = fsize + xo.Size
+				}
+				w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
+				for filepart := range fileparts {
+					name = fileparts[filepart]
+					xo, _ = ioctx.Stat(name)
+					readFilez(fileparts[filepart])
+				}
 			}
 		}
 
@@ -135,6 +175,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 
 					mukuch := make([]byte, 0)
 					xxx := 0
+					size := 0
 					fileSegments := make([]string, 0)
 					for {
 
@@ -146,7 +187,6 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							_ = ioct.Write(name, mukuch, xo.Size)
 
 							fileSegments = append(fileSegments, name)
-							//fmt.Println("Writing Segment:", xxx, "to file", name, pool)
 							xxx = xxx + 1
 
 							break
@@ -157,19 +197,24 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							_ = ioct.Write(name, mukuch, xo.Size)
 
 							fileSegments = append(fileSegments, name)
-							//fmt.Println("Writing Segment:", xxx, "to file", name, pool)
 							xxx = xxx + 1
+							lenMukuch := len(mukuch)
 
+							size = size + lenMukuch
+							wrados.Writelog(r.Method, lenMukuch, "bytes, segment", name, "of", r.URL, "to", pool)
 							mukuch = nil
 						}
-					}
 
+						//fileSegments = append(fileSegments, string(size))
+					}
+					fileSegments = append(fileSegments, strconv.Itoa(size))
 					log.Println("Created File", name, "In", pool)
 					fmeta := strings.Join(fileSegments, ",")
 					_, err := metadata.RedClient(pool+"/"+name, "set", fmeta)
 					if err != nil {
 						log.Println("error setting metadata:", err)
 					}
+
 				}
 
 				wrados.Writelog(r.Method, r.Header.Get("Content-Length"), "bytes", r.URL, "to", pool)
@@ -185,9 +230,9 @@ func Put(w http.ResponseWriter, r *http.Request) {
 		}
 	default:
 		w.WriteHeader(http.StatusForbidden)
-		msg := "Server is running in read only mode !"
+		msg := "Server is running in read only mode ! \n"
 		wrados.Writelog(msg)
-		_, _ = fmt.Fprintf(w, msg+"\n")
+		_, _ = w.Write([]byte(msg))
 	}
 }
 
@@ -210,7 +255,9 @@ func Del(w http.ResponseWriter, r *http.Request) {
 				filez = append(filez, name)
 				if eror == nil {
 					//filez = append(filez, name)
+
 					fileparts := strings.Split(ss, ",")
+					fileparts = fileparts[:len(fileparts)-1]
 					for filepart := range fileparts {
 						filez = append(filez, fileparts[filepart])
 					}
@@ -218,14 +265,13 @@ func Del(w http.ResponseWriter, r *http.Request) {
 				}
 
 				for filename := range filez {
-					//fmt.Println(filez[filename])
 					f := ioct.Delete(filez[filename])
 					if f != nil {
 						_, _ = fmt.Fprintf(w, respCodewriter(f, w, r))
 					} else {
 						wrados.Writelog(r.Method, filez[filename], "from", pool)
 						msg := http.StatusText(200) + ", Deleted: " + r.URL.String() + "\n"
-						_, _ = fmt.Fprintf(w, msg)
+						_, _ = w.Write([]byte(msg))
 					}
 				}
 				_, _ = metadata.RedClient(pool+"/"+name, "del", "")
@@ -234,48 +280,8 @@ func Del(w http.ResponseWriter, r *http.Request) {
 		}
 	default:
 		w.WriteHeader(http.StatusForbidden)
-		msg := "Dangerous commands are disabled !"
+		msg := "Dangerous commands are disabled ! \n"
 		wrados.Writelog(msg)
-		_, _ = fmt.Fprintf(w, msg+"\n")
+		_, _ = w.Write([]byte(msg))
 	}
 }
-
-//func Head(w http.ResponseWriter, r *http.Request) {
-//	if configs.Conf.DangeZone {
-//		s := strings.Split(r.URL.Path, "/")
-//		if len(s) == 2 {
-//			pool := s[1]
-//			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-//				randindex := rand.Intn(len(wrados.Rconnect.Connection))
-//				m, _ := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
-//				c, _ := m.GetPoolStats()
-//				fmt.Println(c)
-//			}
-//		}
-//	} else {
-//		w.WriteHeader(http.StatusForbidden)
-//		msg := "Dangerous commands are disabled !"
-//		wrados.Writelog(msg)
-//		_, _ = fmt.Fprintf(w, msg+"\n")
-//	}
-//}
-
-//func Got(w http.ResponseWriter, r *http.Request) {
-//	s := strings.Split(r.URL.Path, "/")
-//	pool := s[1]
-//	name := strings.Join(s[2:], "/")
-//	if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-//		randindex := rand.Intn(len(wrados.Rconnect.Connection))
-//		ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
-//		if e != nil {
-//			fmt.Println(e)
-//		}
-//		xo, _ := ioctx.Stat(name)
-//		bytesOut := make([]byte, xo.Size)
-//		out, _ := ioctx.Read(name, bytesOut, 0)
-//		fmt.Println(out, pool, name, xo.Size)
-//		_, _ = w.Write(bytesOut)
-//	} else {
-//		fmt.Println("Pool " + pool + " does not exists")
-//	}
-//}

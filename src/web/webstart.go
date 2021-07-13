@@ -113,7 +113,7 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 	//	momo.incrementHead()
 	//	Head(w, r)
 	default:
-		_, _ = fmt.Fprintf(w, "Sorry, only GET, HEAD, POST, PUT and DELETE methods are supported.\n")
+		_, _ = fmt.Fprintf(w, "Sorry, only GET, POST, PUT and DELETE methods are supported.\n")
 	}
 }
 
