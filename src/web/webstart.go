@@ -78,6 +78,7 @@ func PopulateUsers() {
 }
 
 func dynHandler(w http.ResponseWriter, r *http.Request) {
+	//fmt.Println(r.Header, r.Method)
 	switch r.Method {
 	case "GET":
 		if configs.Conf.AuthRead {

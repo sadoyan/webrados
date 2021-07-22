@@ -9,8 +9,9 @@ import (
 func RedClient(filename string, ops string, id string) (string, error) {
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     configs.Conf.RedisServer,
-		Password: "", // no password set
-		DB:       0,  // use default DB
+		Username: configs.Conf.RedisUser,
+		Password: configs.Conf.RedisPass,
+		DB:       configs.Conf.RedisDB,
 	})
 
 	var ctx = context.Background()
@@ -31,7 +32,6 @@ func RedClient(filename string, ops string, id string) (string, error) {
 		return id, nil
 	case "del":
 		_ = rdb.Del(ctx, filename)
-		//fmt.Println(h)
 		return "Done", nil
 	}
 
