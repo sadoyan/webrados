@@ -2,6 +2,7 @@ package main
 
 import (
 	"configs"
+	"metadata"
 	"web"
 	"wrados"
 )
@@ -11,5 +12,6 @@ func main() {
 	go web.PopulateUsers()
 	go wrados.LsPools()
 	go wrados.LogToFile()
+	go metadata.RedinitPool()
 	web.RunServer()
 }
