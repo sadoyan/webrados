@@ -57,7 +57,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			xo, lo := ioctx.Stat(name)
 
 			ss, eror := metadata.RedClient(pool+"/"+name, "get", "")
-			filez := []string{}
+			//filez := []string{}
+			var filez []string
 
 			_, infostat := r.URL.Query()["info"]
 			if infostat {
@@ -92,7 +93,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 
 					}
 				}
-
 			} else {
 				readFilez := func(name string) {
 					if lo == nil {
@@ -124,7 +124,17 @@ func Get(w http.ResponseWriter, r *http.Request) {
 						}
 						wrados.Writelog(r.Method, xo.Size, "bytes", name, "from", pool)
 					} else {
-						_, _ = w.Write([]byte(respCodewriter(lo, w, r)))
+						errormsg := strings.Split(fmt.Sprint(lo), ",")
+						log.Println(errormsg)
+						msg := []byte(errormsg[len(errormsg)-1] + "\n")
+						w.Header().Set("Content-Length", strconv.FormatUint(uint64(len(msg)), 10))
+						switch errormsg[len(errormsg)-1] {
+						case " No such file or directory":
+							w.WriteHeader(http.StatusNotFound)
+						default:
+							w.WriteHeader(http.StatusInternalServerError)
+						}
+						_, _ = w.Write(msg)
 					}
 				}
 

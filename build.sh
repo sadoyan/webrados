@@ -11,4 +11,4 @@ go get golang.org/x/sys/unix
 go get go.opentelemetry.io/otel
 #go get github.com/go-redis/redis
 go get github.com/gomodule/redigo/redis
-go build src/webrados.go
+#go build src/webrados.go
