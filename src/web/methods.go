@@ -125,7 +125,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 						wrados.Writelog(r.Method, xo.Size, "bytes", name, "from", pool)
 					} else {
 						errormsg := strings.Split(fmt.Sprint(lo), ",")
-
 						log.Println(errormsg)
 						msg := []byte(errormsg[len(errormsg)-1] + "\n")
 						w.Header().Set("Content-Length", strconv.FormatUint(uint64(len(msg)), 10))
