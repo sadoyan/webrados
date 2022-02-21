@@ -38,6 +38,11 @@ type CfgType struct {
 	RedisUser        string
 	RedisPass        string
 	RedisDB          int
+	MySQLServer      string
+	MySQLDB          string
+	MySQLUser        string
+	MySQLPassword    string
+	DBType           string
 }
 
 var Conf = &CfgType{
@@ -69,6 +74,11 @@ var Conf = &CfgType{
 	RedisUser:        "",
 	RedisPass:        "",
 	RedisDB:          0,
+	MySQLServer:      "127.0.0.1:3108",
+	MySQLDB:          "",
+	MySQLUser:        "",
+	MySQLPassword:    "",
+	DBType:           "",
 }
 
 var authorized = make(map[string]string, 10)
@@ -156,6 +166,7 @@ func SetVarsik() {
 	case false:
 		Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
 	}
+	Conf.DBType = cfg.Section("main").Key("database").String()
 	Conf.RedisServer = cfg.Section("redis").Key("server").String()
 	redisUser := cfg.Section("redis").Key("username").String()
 	redisPass := cfg.Section("redis").Key("password").String()
@@ -166,6 +177,12 @@ func SetVarsik() {
 		Conf.RedisPass = redisPass
 	}
 	Conf.RedisDB, _ = cfg.Section("redis").Key("database").Int()
+
+	Conf.MySQLDB = cfg.Section("mysql").Key("dbname").String()
+	Conf.MySQLServer = cfg.Section("mysql").Key("server").String()
+	Conf.MySQLUser = cfg.Section("mysql").Key("username").String()
+	Conf.MySQLPassword = cfg.Section("mysql").Key("password").String()
+
 	//Conf.RedisUser = cfg.Section("redis").Key("username").String()
 	//Conf.RedisPass = cfg.Section("redis").Key("password").String()
 	//fmt.Println(Conf)

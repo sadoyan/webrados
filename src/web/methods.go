@@ -40,6 +40,7 @@ func respCodewriter(f error, w http.ResponseWriter, r *http.Request) string {
 }
 
 func Get(w http.ResponseWriter, r *http.Request) {
+
 	s := strings.Split(r.URL.Path, "/")
 	pool := s[1]
 	switch pool {
@@ -55,8 +56,9 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			}
 
 			xo, lo := ioctx.Stat(name)
+			//ss := "eeeeeeeeeeeeeee"
+			ss, eror := metadata.DBClient(pool+"/"+name, "get", "")
 
-			ss, eror := metadata.RedClient(pool+"/"+name, "get", "")
 			//filez := []string{}
 			var filez []string
 
@@ -225,7 +227,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 					fileSegments = append(fileSegments, strconv.Itoa(size))
 					log.Println("Created File", name, "In", pool)
 					fmeta := strings.Join(fileSegments, ",")
-					_, err := metadata.RedClient(pool+"/"+name, "set", fmeta)
+					_, err := metadata.DBClient(pool+"/"+name, "set", fmeta)
 					if err != nil {
 						log.Println("error setting metadata:", err)
 					}
@@ -260,8 +262,8 @@ func Del(w http.ResponseWriter, r *http.Request) {
 			pool := s[1]
 			name := strings.Join(s[2:], "/")
 
-			ss, eror := metadata.RedClient(pool+"/"+name, "get", "")
-			filez := []string{}
+			ss, eror := metadata.DBClient(pool+"/"+name, "get", "")
+			var filez []string
 
 			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
 				randindex := rand.Intn(len(wrados.Rconnect.Connection))
@@ -289,7 +291,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 						_, _ = w.Write([]byte(msg))
 					}
 				}
-				_, _ = metadata.RedClient(pool+"/"+name, "del", "")
+				_, _ = metadata.DBClient(pool+"/"+name, "del", "")
 
 			}
 		}
