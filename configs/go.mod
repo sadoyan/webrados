@@ -1,6 +1,6 @@
 module configs
 
-go 1.19
+go 1.17
 
 require gopkg.in/ini.v1 v1.67.0
 

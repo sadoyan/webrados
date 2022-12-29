@@ -1,6 +1,6 @@
 module go-webrados
 
-go 1.19
+go 1.17
 
 require (
 	configs v0.0.1

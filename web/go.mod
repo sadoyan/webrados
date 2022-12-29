@@ -1,6 +1,6 @@
 module web
 
-go 1.19
+go 1.17
 
 require github.com/ceph/go-ceph v0.19.0
 
