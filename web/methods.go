@@ -5,7 +5,6 @@ import (
 	"configs"
 	"encoding/json"
 	"fmt"
-	"github.com/ceph/go-ceph/rados"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,6 +14,8 @@ import (
 	"strconv"
 	"strings"
 	"wrados"
+
+	"github.com/ceph/go-ceph/rados"
 )
 
 var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
