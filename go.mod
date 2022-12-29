@@ -10,7 +10,7 @@ require (
 )
 
 require (
-	github.com/ceph/go-ceph v0.19.0 // indirect
+	github.com/ceph/go-ceph master // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gomodule/redigo v1.8.9 // indirect
 	golang.org/x/sys v0.3.0 // indirect
