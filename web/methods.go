@@ -63,6 +63,15 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			//filez := []string{}
 			var filez []string
 
+			//for n, values := range r.Header {
+			//	if strings.HasPrefix(n, "Range") {
+			//		for _, value := range values {
+			//			fmt.Println(n)
+			//			fmt.Println(value)
+			//		}
+			//	}
+			//}
+
 			_, infostat := r.URL.Query()["info"]
 			if infostat {
 				if lo != nil {
@@ -104,7 +113,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 						if xo.Size-of < mx {
 							mx = xo.Size
 						}
-
 						for {
 							if xo.Size-of <= mx {
 								mx = xo.Size - of
@@ -200,7 +208,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 						line, err := reqBody.ReadBytes('\n')
 						mukuch = append(mukuch, line...)
 						if err == io.EOF {
-							name := name + "-" + randSeq(10)
+							name := name + "-" + strconv.Itoa(size)
 							xo, _ := ioct.Stat(name)
 							_ = ioct.Write(name, mukuch, xo.Size)
 
@@ -210,7 +218,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							break
 						}
 						if len(mukuch) > configs.Conf.Uploadmaxpart {
-							name := name + "-" + randSeq(10)
+							name := name + "-" + strconv.Itoa(size)
 							xo, _ := ioct.Stat(name)
 							_ = ioct.Write(name, mukuch, xo.Size)
 
@@ -219,7 +227,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							lenMukuch := len(mukuch)
 
 							size = size + lenMukuch
-							wrados.Writelog(r.Method, lenMukuch, "bytes, segment", name, "of", r.URL, "to", pool)
+							wrados.Writelog(r.Method, lenMukuch, "bytes, segment", name, "of", r.URL, "to", pool, size)
 							mukuch = nil
 						}
 
