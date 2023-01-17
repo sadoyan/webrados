@@ -91,6 +91,13 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 			Get(w, r)
 		}
 	case "POST", "PUT":
+		_, ko := r.Header["Content-Length"]
+		if !ko {
+			wrados.Writelog("Header \"Content-Length\" is not present in request, aborting")
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte("400: Header \"Content-Length\" is not present in request, aborting \n"))
+			return
+		}
 		if configs.Conf.AuthWrite {
 			if authenticate(w, r) {
 				momo.incrementPost()
@@ -110,11 +117,20 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 			momo.incrementDel()
 			Del(w, r)
 		}
-	//case "HEAD":
+	case "HEAD":
+		if configs.Conf.AuthRead {
+			if authenticate(w, r) {
+				momo.incrementGet()
+				Head(w, r)
+			}
+		} else {
+			momo.incrementGet()
+			Head(w, r)
+		}
 	//	momo.incrementHead()
 	//	Head(w, r)
 	default:
-		_, _ = fmt.Fprintf(w, "Sorry, only GET, POST, PUT and DELETE methods are supported.\n")
+		_, _ = fmt.Fprintf(w, "Sorry, only GET, POST, PUT, HEAD and DELETE methods are supported.\n")
 	}
 }
 

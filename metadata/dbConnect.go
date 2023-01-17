@@ -54,7 +54,7 @@ func DBClient(filename string, ops string, id string) (string, error) {
 			if err == nil {
 				return file, err
 			} else {
-				return "Redis Error", err
+				return "", err
 			}
 		case "set":
 			err := redset(filename, id)
@@ -76,7 +76,7 @@ func DBClient(filename string, ops string, id string) (string, error) {
 			if err == nil {
 				return file, err
 			} else {
-				return "MySQL Error", err
+				return "", err
 			}
 		case "set":
 			err := myset(filename, id)

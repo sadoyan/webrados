@@ -9,6 +9,7 @@ import (
 
 func main() {
 	configs.SetVarsik()
+	web.PopulatemMimes()
 	go metadata.DBConnect()
 	go web.PopulateUsers()
 	go wrados.LsPools()

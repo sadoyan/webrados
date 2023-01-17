@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"log"
 	"math/rand"
 	"metadata"
 	"net/http"
@@ -40,8 +39,220 @@ func respCodewriter(f error, w http.ResponseWriter, r *http.Request) string {
 	}
 }
 
-func Get(w http.ResponseWriter, r *http.Request) {
+func Split(r rune) bool {
+	return r == '=' || r == '-'
+}
 
+func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, xo rados.ObjectStat, of uint64) bool {
+	randindex := rand.Intn(len(wrados.Rconnect.Connection))
+	ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
+
+	if e != nil {
+		wrados.Writelog(e)
+	}
+	mx := uint64(102400)
+	if xo.Size-of < mx {
+		mx = xo.Size
+	}
+	for {
+		if xo.Size-of <= mx {
+			mx = xo.Size - of
+		}
+		bytesOut := make([]byte, mx)
+		_, err := ioctx.Read(name, bytesOut, of)
+		if err != nil {
+			wrados.Writelog(err)
+			break
+		}
+		_, er := w.Write(bytesOut)
+		if er != nil {
+			if !strings.HasPrefix(er.Error(), "write tcp") {
+				wrados.Writelog(er)
+			}
+			return false
+
+		}
+		of = of + mx
+		if of >= xo.Size {
+			break
+		}
+	}
+	wrados.Writelog(r.Method, xo.Size, "bytes", name, "from", pool)
+	return true
+}
+
+func Get(w http.ResponseWriter, r *http.Request) {
+	s := strings.Split(r.URL.Path, "/")
+	pool := s[1]
+
+	var minrange int
+	var contentlenght int
+	var of uint64
+	switch pool {
+	case "favicon.ico":
+		// DO nothing !
+	default:
+		name := strings.Join(s[len(s)-1:], "/")
+		extension := strings.Split(name, ".")[1]
+
+		if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
+			randindex := rand.Intn(len(wrados.Rconnect.Connection))
+			ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
+			if e != nil {
+				wrados.Writelog(e)
+			}
+			filename, eror := metadata.DBClient(pool+"/"+name, "get", "")
+			xo, lo := ioctx.Stat(name)
+			if lo != nil {
+				errormsg := strings.Split(fmt.Sprint(lo), ",")
+				wrados.Writelog(errormsg)
+				switch errormsg[len(errormsg)-1] {
+				case " No such file or directory":
+					w.WriteHeader(http.StatusNotFound)
+					_, _ = w.Write([]byte("404 File not found \n"))
+				default:
+					w.WriteHeader(http.StatusInternalServerError)
+					_, _ = w.Write([]byte("500 Internal Server Error \n"))
+				}
+				return
+			}
+
+			_, infostat := r.URL.Query()["info"]
+
+			if infostat {
+				if lo != nil {
+					w.WriteHeader(http.StatusNotFound)
+					_, _ = w.Write([]byte(lo.Error()))
+					_, _ = w.Write([]byte("\n"))
+				} else {
+					if eror == nil {
+						ns := strings.Split(filename, ",")
+						numbSegments := strconv.Itoa(len(ns))
+
+						fileInfo := &FileInfo{
+							Size:     ns[len(ns)-1],
+							Pool:     pool,
+							Segments: numbSegments,
+							Name:     name,
+						}
+						b, _ := json.Marshal(fileInfo)
+						_, _ = w.Write(b)
+						_, _ = w.Write([]byte("\n"))
+					} else {
+						fileInfo := &FileInfo{
+							Size:     strconv.Itoa(int(xo.Size)),
+							Pool:     pool,
+							Segments: "1",
+							Name:     name,
+						}
+						b, _ := json.Marshal(fileInfo)
+						_, _ = w.Write(b)
+						_, _ = w.Write([]byte("\n"))
+
+					}
+				}
+				return
+			}
+
+			mime, mok := HttpMimes.Videos[extension]
+			switch mok {
+			case false:
+				w.Header().Set("Content-Length", strconv.FormatUint(uint64(xo.Size), 10))
+				readFile(w, r, name, pool, xo, of)
+			case true:
+
+				var fsize uint64
+				fileparts := strings.Split(filename, ",")
+				fileparts = fileparts[:len(fileparts)-1]
+				for filepart := range fileparts {
+					name = fileparts[filepart]
+					xo, _ = ioctx.Stat(name)
+					fsize = fsize + xo.Size
+				}
+
+				//fmt.Println("==========  ==========")
+				//for nnn, values := range r.Header {
+				//	for _, value := range values {
+				//		fmt.Println(nnn, value)
+				//	}
+				//}
+				//fmt.Println("==========  ==========")
+
+				_, ko := r.Header["Range"]
+				switch ko {
+				case true:
+
+					ranges := strings.FieldsFunc(r.Header.Get("Range"), Split)
+					if len(ranges) >= 2 {
+						minrange, _ = strconv.Atoi(ranges[1])
+						contentlenght = int(fsize) - minrange
+					} else {
+						contentlenght = int(xo.Size)
+					}
+
+					sizes := []int{}
+					actsz := []int{}
+					before := 0
+
+					for filepart := range fileparts {
+						siz, _ := strconv.Atoi(strings.Split(fileparts[filepart], "-")[1])
+						sizes = append(sizes, siz)
+						x, ez := ioctx.Stat(fileparts[filepart])
+						if ez != nil {
+							wrados.Writelog("Can't get file info", fileparts[filepart])
+						}
+						actsz = append(actsz, int(x.Size))
+					}
+
+					for fp := range sizes {
+						if minrange < sizes[fp] {
+							for xd := range fileparts[:fp-1] { // Calculate prior file sizes
+								before = actsz[xd] + before
+								//fmt.Println(before)
+							}
+							fileparts = fileparts[fp-1:]
+							sizes = sizes[fp-1:]
+							break
+						}
+					}
+
+					w.Header().Set("Content-Length", strconv.Itoa(contentlenght))
+					w.Header().Set("Accept-Ranges", "bytes")
+					w.Header().Set("Last-Modified", xo.ModTime.String())
+					w.Header().Set("Content-Range", "bytes "+strconv.Itoa(minrange)+"-"+strconv.FormatUint(fsize-1, 10)+"/"+strconv.FormatUint(fsize, 10))
+					w.Header().Set("Content-Type", mime)
+					w.WriteHeader(http.StatusPartialContent)
+
+					for filepart := range fileparts {
+						name = fileparts[filepart]
+						xo, _ = ioctx.Stat(name)
+						if filepart == 0 {
+							of = uint64(minrange - before)
+						} else {
+							of = 0
+						}
+						x := readFile(w, r, name, pool, xo, of)
+						if x == false {
+							break
+						}
+					}
+				case false:
+					w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
+					for filepart := range fileparts {
+						name = fileparts[filepart]
+						xo, _ = ioctx.Stat(name)
+						x := readFile(w, r, name, pool, xo, 0)
+						if x == false {
+							break
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+func Geet(w http.ResponseWriter, r *http.Request) {
 	s := strings.Split(r.URL.Path, "/")
 	pool := s[1]
 	switch pool {
@@ -136,7 +347,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 						wrados.Writelog(r.Method, xo.Size, "bytes", name, "from", pool)
 					} else {
 						errormsg := strings.Split(fmt.Sprint(lo), ",")
-						log.Println(errormsg)
+						wrados.Writelog(errormsg)
 						msg := []byte(errormsg[len(errormsg)-1] + "\n")
 						w.Header().Set("Content-Length", strconv.FormatUint(uint64(len(msg)), 10))
 						switch errormsg[len(errormsg)-1] {
@@ -230,15 +441,13 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							wrados.Writelog(r.Method, lenMukuch, "bytes, segment", name, "of", r.URL, "to", pool, size)
 							mukuch = nil
 						}
-
-						//fileSegments = append(fileSegments, string(size))
 					}
-					fileSegments = append(fileSegments, strconv.Itoa(size))
-					log.Println("Created File", name, "In", pool)
+					fileSegments = append(fileSegments, r.Header.Get("Content-Length"))
+					wrados.Writelog("Created File", name, "In", pool)
 					fmeta := strings.Join(fileSegments, ",")
 					_, err := metadata.DBClient(pool+"/"+name, "set", fmeta)
 					if err != nil {
-						log.Println("error setting metadata:", err)
+						wrados.Writelog("error setting metadata:", err)
 					}
 
 				}
@@ -309,5 +518,50 @@ func Del(w http.ResponseWriter, r *http.Request) {
 		msg := "Dangerous commands are disabled ! \n"
 		wrados.Writelog(msg)
 		_, _ = w.Write([]byte(msg))
+	}
+}
+
+func Head(w http.ResponseWriter, r *http.Request) {
+	s := strings.Split(r.URL.Path, "/")
+	pool := s[1]
+	switch pool {
+	case "favicon.ico":
+		// DO nothing !
+	default:
+		name := strings.Join(s[2:], "/")
+		if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
+			randindex := rand.Intn(len(wrados.Rconnect.Connection))
+			ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
+			if e != nil {
+				wrados.Writelog(e)
+			}
+			xo, lo := ioctx.Stat(name)
+			ss, eror := metadata.DBClient(pool+"/"+name, "get", "")
+			if eror != nil {
+				wrados.Writelog(eror)
+				break
+			}
+
+			if lo != nil {
+				w.WriteHeader(http.StatusNotFound)
+				_, _ = w.Write([]byte(lo.Error()))
+				_, _ = w.Write([]byte("\n"))
+			} else {
+				fmt.Println(" ")
+				wrados.Writelog(xo, ss)
+				//w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
+				for nnn, values := range r.Header {
+					for _, value := range values {
+						fmt.Println(nnn, value)
+					}
+				}
+				wrados.Writelog(r.URL, r.Method, r.ContentLength, r.RequestURI)
+				fmt.Println(" ")
+			}
+		} else {
+			wrados.Writelog("Pool " + pool + " does not exists")
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte("500 Internal Server Error \n"))
+		}
 	}
 }
