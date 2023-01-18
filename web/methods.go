@@ -17,15 +17,14 @@ import (
 	"github.com/ceph/go-ceph/rados"
 )
 
-var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-
-func randSeq(n int) string {
-	b := make([]rune, n)
-	for i := range b {
-		b[i] = letters[rand.Intn(len(letters))]
-	}
-	return string(b)
-}
+//var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+//func randSeq(n int) string {
+//	b := make([]rune, n)
+//	for i := range b {
+//		b[i] = letters[rand.Intn(len(letters))]
+//	}
+//	return string(b)
+//}
 
 func respCodewriter(f error, w http.ResponseWriter, r *http.Request) string {
 	if strings.Split(f.Error(), ",")[1] == " No such file or directory" {
@@ -65,6 +64,7 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 			break
 		}
 		_, er := w.Write(bytesOut)
+
 		if er != nil {
 			if !strings.HasPrefix(er.Error(), "write tcp") {
 				wrados.Writelog(er)
@@ -160,9 +160,43 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				w.Header().Set("Content-Length", strconv.FormatUint(uint64(xo.Size), 10))
 				readFile(w, r, name, pool, xo, of)
 			case true:
-
 				var fsize uint64
-				fileparts := strings.Split(filename, ",")
+				var fileparts []string
+				xo, _ = ioctx.Stat(name)
+				if xo.Size > 0 {
+					_, ko := r.Header["Range"]
+					switch ko {
+					case true:
+						ranges := strings.FieldsFunc(r.Header.Get("Range"), Split)
+
+						if len(ranges) >= 2 {
+							minrange, _ = strconv.Atoi(ranges[1])
+							contentlenght = int(xo.Size) - minrange
+						} else {
+							contentlenght = int(xo.Size)
+						}
+
+						contentlenght = int(xo.Size) - minrange
+						of = uint64(minrange)
+
+						w.Header().Set("Content-Length", strconv.Itoa(contentlenght))
+						w.Header().Set("Accept-Ranges", "bytes")
+						w.Header().Set("Last-Modified", xo.ModTime.String())
+						w.Header().Set("Content-Range", "bytes "+strconv.Itoa(minrange)+"-"+strconv.FormatUint(uint64(xo.Size-1), 10)+"/"+strconv.FormatUint(xo.Size, 10))
+						w.Header().Set("Content-Type", mime)
+						w.WriteHeader(http.StatusPartialContent)
+
+						readFile(w, r, name, pool, xo, of)
+						break
+					case false:
+						w.Header().Set("Content-Length", strconv.FormatUint(uint64(xo.Size), 10))
+						readFile(w, r, name, pool, xo, of)
+						break
+					}
+					break
+				}
+
+				fileparts = strings.Split(filename, ",")
 				fileparts = fileparts[:len(fileparts)-1]
 				for filepart := range fileparts {
 					name = fileparts[filepart]
@@ -170,13 +204,13 @@ func Get(w http.ResponseWriter, r *http.Request) {
 					fsize = fsize + xo.Size
 				}
 
-				//fmt.Println("==========  ==========")
+				//fmt.Println("============== Req ==============")
 				//for nnn, values := range r.Header {
 				//	for _, value := range values {
 				//		fmt.Println(nnn, value)
 				//	}
 				//}
-				//fmt.Println("==========  ==========")
+				//fmt.Println("=================================")
 
 				_, ko := r.Header["Range"]
 				switch ko {
@@ -223,19 +257,28 @@ func Get(w http.ResponseWriter, r *http.Request) {
 					w.Header().Set("Content-Type", mime)
 					w.WriteHeader(http.StatusPartialContent)
 
-					for filepart := range fileparts {
-						name = fileparts[filepart]
+					if minrange >= sizes[len(sizes)-1] {
 						xo, _ = ioctx.Stat(name)
-						if filepart == 0 {
-							of = uint64(minrange - before)
-						} else {
-							of = 0
+						of = xo.Size - uint64(contentlenght)
+						_ = readFile(w, r, name, pool, xo, of)
+					} else {
+						for filepart := range fileparts {
+							name = fileparts[filepart]
+							xo, _ = ioctx.Stat(name)
+							if filepart == 0 {
+								of = uint64(minrange - before)
+
+							} else {
+								of = 0
+							}
+							x := readFile(w, r, name, pool, xo, of)
+							if x == false {
+								break
+							}
 						}
-						x := readFile(w, r, name, pool, xo, of)
-						if x == false {
-							break
-						}
+
 					}
+
 				case false:
 					w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
 					for filepart := range fileparts {
