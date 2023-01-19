@@ -77,11 +77,14 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 			break
 		}
 	}
+
 	wrados.Writelog(r.Method, xo.Size, "bytes", name, "from", pool)
 	return true
 }
 
 func Get(w http.ResponseWriter, r *http.Request) {
+	//start := time.Now()
+
 	s := strings.Split(r.URL.Path, "/")
 	pool := s[1]
 
@@ -293,146 +296,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-}
-
-func Geet(w http.ResponseWriter, r *http.Request) {
-	s := strings.Split(r.URL.Path, "/")
-	pool := s[1]
-	switch pool {
-	case "favicon.ico":
-		// DO nothing !
-	default:
-		name := strings.Join(s[2:], "/")
-		if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-			randindex := rand.Intn(len(wrados.Rconnect.Connection))
-			ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
-			if e != nil {
-				wrados.Writelog(e)
-			}
-
-			xo, lo := ioctx.Stat(name)
-			//ss := "eeeeeeeeeeeeeee"
-			ss, eror := metadata.DBClient(pool+"/"+name, "get", "")
-
-			//filez := []string{}
-			var filez []string
-
-			//for n, values := range r.Header {
-			//	if strings.HasPrefix(n, "Range") {
-			//		for _, value := range values {
-			//			fmt.Println(n)
-			//			fmt.Println(value)
-			//		}
-			//	}
-			//}
-
-			_, infostat := r.URL.Query()["info"]
-			if infostat {
-				if lo != nil {
-					w.WriteHeader(http.StatusNotFound)
-					_, _ = w.Write([]byte(lo.Error()))
-					_, _ = w.Write([]byte("\n"))
-				} else {
-					if eror == nil {
-						ns := strings.Split(ss, ",")
-						numbSegments := strconv.Itoa(len(ns))
-
-						fileInfo := &FileInfo{
-							Size:     ns[len(ns)-1],
-							Pool:     pool,
-							Segments: numbSegments,
-							Name:     name,
-						}
-						b, _ := json.Marshal(fileInfo)
-						_, _ = w.Write(b)
-						_, _ = w.Write([]byte("\n"))
-					} else {
-						fileInfo := &FileInfo{
-							Size:     strconv.Itoa(int(xo.Size)),
-							Pool:     pool,
-							Segments: "1",
-							Name:     name,
-						}
-						b, _ := json.Marshal(fileInfo)
-						_, _ = w.Write(b)
-						_, _ = w.Write([]byte("\n"))
-
-					}
-				}
-			} else {
-				readFilez := func(name string) {
-					if lo == nil {
-						of := uint64(0)
-						mx := uint64(20480)
-						if xo.Size-of < mx {
-							mx = xo.Size
-						}
-						for {
-							if xo.Size-of <= mx {
-								mx = xo.Size - of
-							}
-							bytesOut := make([]byte, mx)
-							_, err := ioctx.Read(name, bytesOut, of)
-							if err != nil {
-								wrados.Writelog(err)
-								break
-							}
-							_, er := w.Write(bytesOut)
-							if er != nil {
-								//wrados.Writelog(er) // Broken Pipe, Connection Reset
-								break
-							}
-							of = of + mx
-							if of >= xo.Size {
-								break
-							}
-						}
-						wrados.Writelog(r.Method, xo.Size, "bytes", name, "from", pool)
-					} else {
-						errormsg := strings.Split(fmt.Sprint(lo), ",")
-						wrados.Writelog(errormsg)
-						msg := []byte(errormsg[len(errormsg)-1] + "\n")
-						w.Header().Set("Content-Length", strconv.FormatUint(uint64(len(msg)), 10))
-						switch errormsg[len(errormsg)-1] {
-						case " No such file or directory":
-							w.WriteHeader(http.StatusNotFound)
-						default:
-							w.WriteHeader(http.StatusInternalServerError)
-						}
-						_, _ = w.Write(msg)
-					}
-				}
-
-				if eror != nil {
-					filez = append(filez, name)
-					for file := range filez {
-						w.Header().Set("Content-Length", strconv.FormatUint(xo.Size, 10))
-						readFilez(filez[file])
-					}
-				} else {
-					var fsize uint64
-					fileparts := strings.Split(ss, ",")
-					fileparts = fileparts[:len(fileparts)-1]
-					for filepart := range fileparts {
-						name = fileparts[filepart]
-						xo, _ = ioctx.Stat(name)
-						fsize = fsize + xo.Size
-					}
-					w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
-					for filepart := range fileparts {
-						name = fileparts[filepart]
-						xo, _ = ioctx.Stat(name)
-						readFilez(fileparts[filepart])
-					}
-				}
-			}
-
-		} else {
-			wrados.Writelog("Pool " + pool + " does not exists")
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte("500 Internal Server Error \n"))
-		}
-	}
+	//elapsed := time.Since(start)
+	//fmt.Println("Took :", elapsed)
 }
 
 func Put(w http.ResponseWriter, r *http.Request) {
