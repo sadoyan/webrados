@@ -2,9 +2,11 @@ package configs
 
 import (
 	"flag"
+	"github.com/ceph/go-ceph/rados"
 	"gopkg.in/ini.v1"
 	"log"
 	"os"
+	"strconv"
 	"strings"
 )
 
@@ -117,10 +119,16 @@ func SetVarsik() {
 	qs, _ := cfg.Section("main").Key("queuesize").Int()
 	Conf.queue = make(chan string, qs)
 
-	Conf.Uploadmaxpart, err = cfg.Section("main").Key("uploadmaxpart").Int()
-	if err != nil {
-		log.Fatal("Please set numeric value to Uploadmaxpart")
-	}
+	//Conf.Uploadmaxpart, err = cfg.Section("main").Key("uploadmaxpart").Int()
+	//if err != nil {
+	//	log.Fatal("Please set numeric value to Uploadmaxpart")
+	//}
+	vsyo, _ := rados.NewConn()
+	_ = vsyo.ReadDefaultConfigFile()
+	_ = vsyo.Connect()
+	osdMaxObjectSize, _ := vsyo.GetConfigOption("osd max object size")
+	s, _ := strconv.Atoi(osdMaxObjectSize)
+	Conf.Uploadmaxpart = s
 
 	Conf.Radoconns, err = cfg.Section("main").Key("radoconns").Int()
 	if err != nil {

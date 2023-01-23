@@ -5,7 +5,6 @@ import (
 	"configs"
 	"encoding/json"
 	"fmt"
-	"io"
 	"io/ioutil"
 	"math/rand"
 	"metadata"
@@ -16,15 +15,6 @@ import (
 
 	"github.com/ceph/go-ceph/rados"
 )
-
-//var letters = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
-//func randSeq(n int) string {
-//	b := make([]rune, n)
-//	for i := range b {
-//		b[i] = letters[rand.Intn(len(letters))]
-//	}
-//	return string(b)
-//}
 
 func respCodewriter(f error, w http.ResponseWriter, r *http.Request) string {
 	if strings.Split(f.Error(), ",")[1] == " No such file or directory" {
@@ -49,7 +39,8 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 	if e != nil {
 		wrados.Writelog(e)
 	}
-	mx := uint64(102400)
+	//mx := uint64(1024000)
+	mx := uint64(256000)
 	if xo.Size-of < mx {
 		mx = xo.Size
 	}
@@ -311,53 +302,72 @@ func Put(w http.ResponseWriter, r *http.Request) {
 				randindex := rand.Intn(len(wrados.Rconnect.Connection))
 				ioct, _ := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 				lenq, _ := strconv.Atoi(r.Header.Get("Content-Length"))
-				if lenq < configs.Conf.Uploadmaxpart {
+
+				ssize := 2048000
+				ssiz1 := 2048001
+
+				if lenq < ssiz1 {
 					reqBody, _ := ioutil.ReadAll(r.Body)
 					_ = ioct.Write(name, reqBody, 0)
 				} else {
-					reqBody := bufio.NewReader(r.Body)
 					_ = ioct.Create(name, rados.CreateOption(lenq))
-
-					mukuch := make([]byte, 0)
-					xxx := 0
-					size := 0
 					fileSegments := make([]string, 0)
+					reader := bufio.NewReader(r.Body)
+					const BufferSize = 1
+					buffer := make([]byte, BufferSize)
+					writebuffer := make([]byte, 0)
+
+					//start := time.Now()
+					var bytecalc int
+					var totalbytes int
+					var segment string
+					//PrintMemUsage()
+
 					for {
+						if bytecalc == 0 {
+							if lenq < configs.Conf.Uploadmaxpart-ssiz1 {
+								segment = name
+							} else {
+								segment = name + "-0"
+								fileSegments = append(fileSegments, segment)
 
-						line, err := reqBody.ReadBytes('\n')
-						mukuch = append(mukuch, line...)
-						if err == io.EOF {
-							name := name + "-" + strconv.Itoa(size)
-							xo, _ := ioct.Stat(name)
-							_ = ioct.Write(name, mukuch, xo.Size)
-
-							fileSegments = append(fileSegments, name)
-							xxx = xxx + 1
-
+							}
+						}
+						_, eerr := reader.Read(buffer)
+						if eerr != nil {
+							_ = ioct.Append(segment, writebuffer)
+							wrados.Writelog(r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
+							writebuffer = nil
 							break
 						}
-						if len(mukuch) > configs.Conf.Uploadmaxpart {
-							name := name + "-" + strconv.Itoa(size)
-							xo, _ := ioct.Stat(name)
-							_ = ioct.Write(name, mukuch, xo.Size)
 
-							fileSegments = append(fileSegments, name)
-							xxx = xxx + 1
-							lenMukuch := len(mukuch)
-
-							size = size + lenMukuch
-							wrados.Writelog(r.Method, lenMukuch, "bytes, segment", name, "of", r.URL, "to", pool, size)
-							mukuch = nil
+						writebuffer = append(writebuffer, buffer...)
+						if bytecalc >= configs.Conf.Uploadmaxpart-ssiz1 {
+							segment = name + "-" + strconv.Itoa(totalbytes)
+							_ = ioct.Create(segment, rados.CreateOption(configs.Conf.Uploadmaxpart-ssiz1))
+							fileSegments = append(fileSegments, segment)
+							wrados.Writelog(r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
+							bytecalc = 0
+						}
+						if len(writebuffer) == ssize {
+							_ = ioct.Append(segment, writebuffer)
+							writebuffer = nil
+						}
+						bytecalc = bytecalc + 1
+						totalbytes = totalbytes + 1
+					}
+					//PrintMemUsage()
+					if lenq >= configs.Conf.Uploadmaxpart-ssiz1 {
+						fileSegments = append(fileSegments, r.Header.Get("Content-Length"))
+						fmeta := strings.Join(fileSegments, ",")
+						_, metaerr := metadata.DBClient(pool+"/"+name, "set", fmeta)
+						if metaerr != nil {
+							wrados.Writelog("error setting metadata:", metaerr)
 						}
 					}
-					fileSegments = append(fileSegments, r.Header.Get("Content-Length"))
-					wrados.Writelog("Created File", name, "In", pool)
-					fmeta := strings.Join(fileSegments, ",")
-					_, err := metadata.DBClient(pool+"/"+name, "set", fmeta)
-					if err != nil {
-						wrados.Writelog("error setting metadata:", err)
-					}
 
+					wrados.Writelog("Created File", name, "In", pool)
+					//log.Printf("Execution time %s\n", time.Since(start))
 				}
 
 				wrados.Writelog(r.Method, r.Header.Get("Content-Length"), "bytes", r.URL, "to", pool)
@@ -426,50 +436,5 @@ func Del(w http.ResponseWriter, r *http.Request) {
 		msg := "Dangerous commands are disabled ! \n"
 		wrados.Writelog(msg)
 		_, _ = w.Write([]byte(msg))
-	}
-}
-
-func Head(w http.ResponseWriter, r *http.Request) {
-	s := strings.Split(r.URL.Path, "/")
-	pool := s[1]
-	switch pool {
-	case "favicon.ico":
-		// DO nothing !
-	default:
-		name := strings.Join(s[2:], "/")
-		if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
-			randindex := rand.Intn(len(wrados.Rconnect.Connection))
-			ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
-			if e != nil {
-				wrados.Writelog(e)
-			}
-			xo, lo := ioctx.Stat(name)
-			ss, eror := metadata.DBClient(pool+"/"+name, "get", "")
-			if eror != nil {
-				wrados.Writelog(eror)
-				break
-			}
-
-			if lo != nil {
-				w.WriteHeader(http.StatusNotFound)
-				_, _ = w.Write([]byte(lo.Error()))
-				_, _ = w.Write([]byte("\n"))
-			} else {
-				fmt.Println(" ")
-				wrados.Writelog(xo, ss)
-				//w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
-				for nnn, values := range r.Header {
-					for _, value := range values {
-						fmt.Println(nnn, value)
-					}
-				}
-				wrados.Writelog(r.URL, r.Method, r.ContentLength, r.RequestURI)
-				fmt.Println(" ")
-			}
-		} else {
-			wrados.Writelog("Pool " + pool + " does not exists")
-			w.WriteHeader(http.StatusInternalServerError)
-			_, _ = w.Write([]byte("500 Internal Server Error \n"))
-		}
 	}
 }

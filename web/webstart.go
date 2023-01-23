@@ -117,16 +117,6 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 			momo.incrementDel()
 			Del(w, r)
 		}
-	case "HEAD":
-		if configs.Conf.AuthRead {
-			if authenticate(w, r) {
-				momo.incrementGet()
-				Head(w, r)
-			}
-		} else {
-			momo.incrementGet()
-			Head(w, r)
-		}
 	//	momo.incrementHead()
 	//	Head(w, r)
 	default:

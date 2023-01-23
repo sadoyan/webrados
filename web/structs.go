@@ -1,5 +1,10 @@
 package web
 
+import (
+	"fmt"
+	"runtime"
+)
+
 type FileInfo struct {
 	Name     string `json:"name"`
 	Size     string `json:"size"`
@@ -105,4 +110,13 @@ func PopulatemMimes() {
 	HttpMimes.Videos["vp8"] = "video/vp8"
 	HttpMimes.Videos["vp9"] = "video/vp9"
 	HttpMimes.Videos["webm"] = "video/webm"
+}
+
+func PrintMemUsage() {
+	var m runtime.MemStats
+	runtime.ReadMemStats(&m)
+	fmt.Printf("Alloc = %v MiB", bToMb(m.Alloc))
+	fmt.Printf("\tTotalAlloc = %v MiB", bToMb(m.TotalAlloc))
+	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
+	fmt.Printf("\tNumGC = %v\n", m.NumGC)
 }

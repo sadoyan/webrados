@@ -56,6 +56,7 @@ func LsPools() {
 		osdMaxObjectSize, _ := vsyo.GetConfigOption("osd max object size")
 		s, _ := strconv.Atoi(osdMaxObjectSize)
 		configs.Conf.OSDMaxObjectSize = s
+		configs.Conf.Uploadmaxpart = s
 
 		polos := map[string]bool{}
 		switch configs.Conf.AllPools {
