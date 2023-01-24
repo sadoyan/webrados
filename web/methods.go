@@ -151,13 +151,28 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			mime, mok := HttpMimes.Videos[extension]
 			switch mok {
 			case false:
-				w.Header().Set("Content-Length", strconv.FormatUint(uint64(xo.Size), 10))
-				readFile(w, r, name, pool, xo, of)
+				if len(filename) > 0 {
+					var fileparts []string
+					fileparts = strings.Split(filename, ",")
+					lenq := fileparts[len(fileparts)-1]
+					ff := fileparts[:len(fileparts)-1]
+					w.Header().Set("Content-Length", lenq)
+					for fp := range ff {
+						name = fileparts[fp]
+						xo, _ = ioctx.Stat(name)
+						readFile(w, r, name, pool, xo, of)
+					}
+
+				} else {
+					readFile(w, r, name, pool, xo, of)
+				}
+
 			case true:
 				var fsize uint64
 				var fileparts []string
 				xo, _ = ioctx.Stat(name)
-				if xo.Size > 0 {
+				if len(filename) == 0 {
+					//if xo.Size > 0 {
 					_, ko := r.Header["Range"]
 					switch ko {
 					case true:
@@ -330,7 +345,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							} else {
 								segment = name + "-0"
 								fileSegments = append(fileSegments, segment)
-
+								wrados.Writelog(r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
 							}
 						}
 						_, eerr := reader.Read(buffer)
