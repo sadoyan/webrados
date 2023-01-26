@@ -174,25 +174,56 @@ func SetVarsik() {
 	case false:
 		Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
 	}
-	Conf.DBType = cfg.Section("main").Key("database").String()
-	Conf.RedisServer = cfg.Section("redis").Key("server").String()
-	redisUser := cfg.Section("redis").Key("username").String()
-	redisPass := cfg.Section("redis").Key("password").String()
-	if strings.ToLower(redisUser) != "none" {
-		Conf.RedisUser = redisUser
-	}
-	if strings.ToLower(redisPass) != "none" {
-		Conf.RedisPass = redisPass
-	}
-	Conf.RedisDB, _ = cfg.Section("redis").Key("database").Int()
 
-	Conf.MySQLDB = cfg.Section("mysql").Key("dbname").String()
-	Conf.MySQLServer = cfg.Section("mysql").Key("server").String()
-	Conf.MySQLUser = cfg.Section("mysql").Key("username").String()
-	Conf.MySQLPassword = cfg.Section("mysql").Key("password").String()
+	//Conf.DBType = cfg.Section("main").Key("database").String()
+	//Conf.RedisServer = cfg.Section("redis").Key("server").String()
+	//redisUser := cfg.Section("redis").Key("username").String()
+	//redisPass := cfg.Section("redis").Key("password").String()
+	//if strings.ToLower(redisUser) != "none" {
+	//	Conf.RedisUser = redisUser
+	//}
+	//if strings.ToLower(redisPass) != "none" {
+	//	Conf.RedisPass = redisPass
+	//}
+	//
+	//redisdb, rederr := cfg.Section("redis").Key("database").Int()
+	//if rederr != nil {
+	//	log.Fatal("Redis database name should be numeric", rederr)
+	//} else {
+	//	Conf.RedisDB = redisdb
+	//}
+	//
+	//Conf.MySQLDB = cfg.Section("mysql").Key("database").String()
+	//Conf.MySQLServer = cfg.Section("mysql").Key("server").String()
+	//Conf.MySQLUser = cfg.Section("mysql").Key("username").String()
+	//Conf.MySQLPassword = cfg.Section("mysql").Key("password").String()
 
-	//Conf.RedisUser = cfg.Section("redis").Key("username").String()
-	//Conf.RedisPass = cfg.Section("redis").Key("password").String()
-	//fmt.Println(Conf)
+	Conf.DBType = cfg.Section("database").Key("type").String()
+
+	switch Conf.DBType {
+	case "redis":
+		Conf.RedisServer = cfg.Section("database").Key("server").String()
+		redisUser := cfg.Section("database").Key("username").String()
+		redisPass := cfg.Section("database").Key("password").String()
+		if strings.ToLower(redisUser) != "none" {
+			Conf.RedisUser = redisUser
+		}
+		if strings.ToLower(redisPass) != "none" {
+			Conf.RedisPass = redisPass
+		}
+
+		redisdb, rederr := cfg.Section("database").Key("database").Int()
+		if rederr != nil {
+			log.Fatal("Redis database name should be numeric", rederr)
+		} else {
+			Conf.RedisDB = redisdb
+		}
+	case "mysql":
+		Conf.MySQLDB = cfg.Section("database").Key("database").String()
+		Conf.MySQLServer = cfg.Section("database").Key("server").String()
+		Conf.MySQLUser = cfg.Section("database").Key("username").String()
+		Conf.MySQLPassword = cfg.Section("database").Key("password").String()
+	case "ceph":
+	}
 
 }

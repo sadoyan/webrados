@@ -92,6 +92,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
 			randindex := rand.Intn(len(wrados.Rconnect.Connection))
 			ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
+			defer ioctx.Destroy()
 			if e != nil {
 				wrados.Writelog(e)
 			}
@@ -122,7 +123,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 					if eror == nil {
 						ns := strings.Split(filename, ",")
 						numbSegments := strconv.Itoa(len(ns))
-
 						fileInfo := &FileInfo{
 							Size:     ns[len(ns)-1],
 							Pool:     pool,
@@ -130,6 +130,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 							Name:     name,
 						}
 						b, _ := json.Marshal(fileInfo)
+						//fmt.Println(fileInfo)
+						//fmt.Println(b)
 						_, _ = w.Write(b)
 						_, _ = w.Write([]byte("\n"))
 					} else {
@@ -140,6 +142,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 							Name:     name,
 						}
 						b, _ := json.Marshal(fileInfo)
+
 						_, _ = w.Write(b)
 						_, _ = w.Write([]byte("\n"))
 
@@ -156,7 +159,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 					fileparts = strings.Split(filename, ",")
 					lenq := fileparts[len(fileparts)-1]
 					ff := fileparts[:len(fileparts)-1]
-					w.Header().Set("Content-Length", lenq)
+					//w.Header().Set("Content-Length", lenq)
+					fmt.Println(lenq, len(filename))
 					for fp := range ff {
 						name = fileparts[fp]
 						xo, _ = ioctx.Stat(name)
@@ -316,6 +320,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
 				randindex := rand.Intn(len(wrados.Rconnect.Connection))
 				ioct, _ := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
+				defer ioct.Destroy()
 				lenq, _ := strconv.Atoi(r.Header.Get("Content-Length"))
 
 				ssize := 2048000
@@ -379,6 +384,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 						if metaerr != nil {
 							wrados.Writelog("error setting metadata:", metaerr)
 						}
+						_ = ioct.Append(name, []byte(fmeta))
 					}
 
 					wrados.Writelog("Created File", name, "In", pool)
@@ -412,13 +418,12 @@ func Del(w http.ResponseWriter, r *http.Request) {
 		if len(s) >= 3 {
 			pool := s[1]
 			name := strings.Join(s[2:], "/")
-
 			ss, eror := metadata.DBClient(pool+"/"+name, "get", "")
 			var filez []string
-
 			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
 				randindex := rand.Intn(len(wrados.Rconnect.Connection))
 				ioct, _ := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
+				defer ioct.Destroy()
 
 				filez = append(filez, name)
 				if eror == nil {

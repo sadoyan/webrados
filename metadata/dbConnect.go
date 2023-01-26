@@ -9,10 +9,14 @@ import (
 
 var useMySQL bool
 var useRedis bool
+var useRados bool
 var myConns = 5
 
 func DBConnect() {
 	switch configs.Conf.DBType {
+	case "ceph":
+		log.Println("[Using Rados file xattrs for metadata]")
+		useRados = true
 	case "mysql":
 		log.Println("[Using MySQL as metadata server]")
 		useMySQL = true
@@ -47,12 +51,33 @@ func DBConnect() {
 }
 
 func DBClient(filename string, ops string, id string) (string, error) {
+	if useRados {
+		switch ops {
+		case "get":
+			file, err := cephget(filename)
+			if err == nil {
+				return file, err
+			} else {
+				return "", err
+			}
+		case "set":
+			_, err := cephset(filename, id)
+			if err != nil {
+				return "Error updating Redis", err
+			}
+			return id, nil
+		case "del":
+			return "Done", nil
+		}
+		return "GGG", nil
+	}
 	if useRedis {
 		switch ops {
 		case "get":
 			file, err := redget(filename)
 			if err == nil {
 				return file, err
+				//return flir, rer
 			} else {
 				return "", err
 			}
