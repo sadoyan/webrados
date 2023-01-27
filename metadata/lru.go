@@ -3,11 +3,14 @@ package metadata
 import (
 	"container/list"
 	"errors"
+	"fmt"
+	"time"
 )
 
 type Node struct {
 	Data   string
 	KeyPtr *list.Element
+	Date   time.Time
 }
 
 type LRUCache struct {
@@ -40,14 +43,33 @@ func (l *LRUCache) Put(key string, value string) {
 			delete(l.Items, back.Value.(string))
 		}
 		l.Items[key] = &Node{Data: value, KeyPtr: l.Queue.PushFront(key)}
+		l.Items[key].Date = time.Now()
 	} else {
-		item.Data = value
 		l.Items[key] = item
 		l.Queue.MoveToFront(item.KeyPtr)
 	}
 
 }
 
-//cache := &metadata.Cache
-//cache.Put("Content-Length", w.Header().Get("Content-Length"))
-//fmt.Println(cache.Get("Valod"))
+func (l *LRUCache) Evict() {
+	for {
+		start := time.Now()
+		num := 0
+		dif := 300 * time.Second
+		then := time.Now().Add(-dif)
+		for x := range l.Items {
+			dd := l.Items[x].Date
+			if dd.Before(then) {
+				num = num + 1
+				back := l.Queue.Back()
+				l.Queue.Remove(back)
+				delete(l.Items, back.Value.(string))
+			}
+		}
+		fmt.Println(" ")
+		fmt.Println("Evixted element: ", num, "current size:", l.Size(), len(l.Items))
+		fmt.Printf("Execution time %s\n", time.Since(start))
+		num = 0
+		time.Sleep(5 * time.Second)
+	}
+}

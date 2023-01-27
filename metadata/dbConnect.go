@@ -15,6 +15,7 @@ var Cache LRUCache
 
 func DBConnect() {
 	Cache = CacheConstructor(configs.Conf.Cache)
+	go Cache.Evict()
 	switch configs.Conf.DBType {
 	case "ceph":
 		log.Println("[Using Rados file xattrs for metadata]")
@@ -48,7 +49,6 @@ func DBConnect() {
 		}
 	default:
 		panic("[Please set database in main section of config.ini]")
-
 	}
 }
 
