@@ -45,6 +45,7 @@ type CfgType struct {
 	MySQLUser        string
 	MySQLPassword    string
 	DBType           string
+	Cache            int
 }
 
 var Conf = &CfgType{
@@ -81,6 +82,7 @@ var Conf = &CfgType{
 	MySQLUser:        "",
 	MySQLPassword:    "",
 	DBType:           "",
+	Cache:            1024,
 }
 
 var authorized = make(map[string]string, 10)
@@ -199,7 +201,12 @@ func SetVarsik() {
 	//Conf.MySQLPassword = cfg.Section("mysql").Key("password").String()
 
 	Conf.DBType = cfg.Section("database").Key("type").String()
-
+	cache, cerr := cfg.Section("main").Key("cacheitems").Int()
+	if cerr != nil {
+		log.Fatal("Cache capacity should be numeric", cerr)
+	} else {
+		Conf.Cache = cache
+	}
 	switch Conf.DBType {
 	case "redis":
 		Conf.RedisServer = cfg.Section("database").Key("server").String()

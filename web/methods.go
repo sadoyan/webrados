@@ -75,7 +75,6 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 
 func Get(w http.ResponseWriter, r *http.Request) {
 	//start := time.Now()
-
 	s := strings.Split(r.URL.Path, "/")
 	pool := s[1]
 
@@ -122,30 +121,23 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				} else {
 					if eror == nil {
 						ns := strings.Split(filename, ",")
+						size := ""
+						if len(ns) > 1 {
+							size = ns[len(ns)-1]
+						} else {
+							size = strconv.Itoa(int(xo.Size))
+						}
 						numbSegments := strconv.Itoa(len(ns))
 						fileInfo := &FileInfo{
-							Size:     ns[len(ns)-1],
+							Size:     size,
 							Pool:     pool,
 							Segments: numbSegments,
 							Name:     name,
 						}
-						b, _ := json.Marshal(fileInfo)
-						//fmt.Println(fileInfo)
-						//fmt.Println(b)
+						//b, _ := json.Marshal(fileInfo)
+						b, _ := json.MarshalIndent(fileInfo, "", "    ")
 						_, _ = w.Write(b)
 						_, _ = w.Write([]byte("\n"))
-					} else {
-						fileInfo := &FileInfo{
-							Size:     strconv.Itoa(int(xo.Size)),
-							Pool:     pool,
-							Segments: "1",
-							Name:     name,
-						}
-						b, _ := json.Marshal(fileInfo)
-
-						_, _ = w.Write(b)
-						_, _ = w.Write([]byte("\n"))
-
 					}
 				}
 				return
@@ -159,7 +151,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 					fileparts = strings.Split(filename, ",")
 					lenq := fileparts[len(fileparts)-1]
 					ff := fileparts[:len(fileparts)-1]
-					//w.Header().Set("Content-Length", lenq)
 					fmt.Println(lenq, len(filename))
 					for fp := range ff {
 						name = fileparts[fp]
@@ -175,6 +166,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				var fsize uint64
 				var fileparts []string
 				xo, _ = ioctx.Stat(name)
+				xoSizeInt := int(xo.Size)
+				xoSizeStr := strconv.Itoa(xoSizeInt)
 				if len(filename) == 0 {
 					//if xo.Size > 0 {
 					_, ko := r.Header["Range"]
@@ -184,25 +177,25 @@ func Get(w http.ResponseWriter, r *http.Request) {
 
 						if len(ranges) >= 2 {
 							minrange, _ = strconv.Atoi(ranges[1])
-							contentlenght = int(xo.Size) - minrange
+							contentlenght = xoSizeInt - minrange
 						} else {
-							contentlenght = int(xo.Size)
+							contentlenght = xoSizeInt
 						}
 
-						contentlenght = int(xo.Size) - minrange
+						contentlenght = xoSizeInt - minrange
 						of = uint64(minrange)
 
 						w.Header().Set("Content-Length", strconv.Itoa(contentlenght))
 						w.Header().Set("Accept-Ranges", "bytes")
 						w.Header().Set("Last-Modified", xo.ModTime.String())
-						w.Header().Set("Content-Range", "bytes "+strconv.Itoa(minrange)+"-"+strconv.FormatUint(uint64(xo.Size-1), 10)+"/"+strconv.FormatUint(xo.Size, 10))
 						w.Header().Set("Content-Type", mime)
+						w.Header().Set("Content-Range", "bytes "+strconv.Itoa(minrange)+"-"+strconv.Itoa(xoSizeInt-1)+"/"+xoSizeStr)
 						w.WriteHeader(http.StatusPartialContent)
 
 						readFile(w, r, name, pool, xo, of)
 						break
 					case false:
-						w.Header().Set("Content-Length", strconv.FormatUint(uint64(xo.Size), 10))
+						w.Header().Set("Content-Length", xoSizeStr)
 						readFile(w, r, name, pool, xo, of)
 						break
 					}
@@ -234,7 +227,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 						minrange, _ = strconv.Atoi(ranges[1])
 						contentlenght = int(fsize) - minrange
 					} else {
-						contentlenght = int(xo.Size)
+						contentlenght = xoSizeInt
 					}
 
 					sizes := []int{}
@@ -266,8 +259,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 					w.Header().Set("Content-Length", strconv.Itoa(contentlenght))
 					w.Header().Set("Accept-Ranges", "bytes")
 					w.Header().Set("Last-Modified", xo.ModTime.String())
-					w.Header().Set("Content-Range", "bytes "+strconv.Itoa(minrange)+"-"+strconv.FormatUint(fsize-1, 10)+"/"+strconv.FormatUint(fsize, 10))
 					w.Header().Set("Content-Type", mime)
+					w.Header().Set("Content-Range", "bytes "+strconv.Itoa(minrange)+"-"+strconv.FormatUint(fsize-1, 10)+"/"+strconv.FormatUint(fsize, 10))
 					w.WriteHeader(http.StatusPartialContent)
 
 					if minrange >= sizes[len(sizes)-1] {

@@ -11,8 +11,10 @@ var useMySQL bool
 var useRedis bool
 var useRados bool
 var myConns = 5
+var Cache LRUCache
 
 func DBConnect() {
+	Cache = CacheConstructor(configs.Conf.Cache)
 	switch configs.Conf.DBType {
 	case "ceph":
 		log.Println("[Using Rados file xattrs for metadata]")
@@ -54,12 +56,20 @@ func DBClient(filename string, ops string, id string) (string, error) {
 	if useRados {
 		switch ops {
 		case "get":
-			file, err := cephget(filename)
-			if err == nil {
-				return file, err
-			} else {
-				return "", err
+			cache := &Cache
+			file, err := cache.Get(filename)
+			//stattemp := "Cached:"
+			if err != nil {
+				file, err = cephget(filename)
+				if err == nil {
+					cache.Put(filename, file)
+					//stattemp = "Fresh:"
+				} else {
+					return "", err
+				}
 			}
+			//fmt.Println(stattemp, cache.Size(), len(Cache.Items), file)
+			return file, err
 		case "set":
 			_, err := cephset(filename, id)
 			if err != nil {
