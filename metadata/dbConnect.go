@@ -2,20 +2,60 @@ package metadata
 
 import (
 	"configs"
+	"context"
 	"database/sql"
+	"github.com/allegro/bigcache/v3"
 	"github.com/gomodule/redigo/redis"
 	"log"
+	"strconv"
+	"time"
 )
 
 var useMySQL bool
 var useRedis bool
 var useRados bool
 var myConns = 5
-var Cache LRUCache
+
+//var Cache LRUCache
+
+var config = bigcache.Config{
+	// number of shards (must be a power of 2)
+	Shards: 1024,
+	// time after which entry can be evicted
+	LifeWindow: 5 * time.Minute,
+	// Interval between removing expired entries (clean up).
+	// If set to <= 0 then no action is performed.
+	// Setting to < 1 second is counterproductive — bigcache has a one second resolution.
+	CleanWindow: 1 * time.Minute,
+	// rps * lifeWindow, used only in initial memory allocation
+	MaxEntriesInWindow: 1000 * 10 * 60,
+	// max entry size in bytes, used only in initial memory allocation
+	MaxEntrySize: 5000,
+	// prints information about additional memory allocation
+	Verbose: true,
+	// cache will not allocate more memory than this limit, value in MB
+	// if value is reached then the oldest entries can be overridden for the new ones
+	// 0 value means no size limit
+	HardMaxCacheSize: 1024,
+	// callback fired when the oldest entry is removed because of its expiration time or no space left
+	// for the new entry, or because delete was called. A bitmask representing the reason will be returned.
+	// Default value is nil which means no callback and it prevents from unwrapping the oldest entry.
+	OnRemove: nil,
+	// OnRemoveWithReason is a callback fired when the oldest entry is removed because of its expiration time or no space left
+	// for the new entry, or because delete was called. A constant representing the reason will be passed through.
+	// Default value is nil which means no callback and it prevents from unwrapping the oldest entry.
+	// Ignored if OnRemove is specified.
+	OnRemoveWithReason: nil,
+}
+var Cache, _ = bigcache.New(context.Background(), config)
 
 func DBConnect() {
-	Cache = CacheConstructor(configs.Conf.Cache)
-	go Cache.Evict()
+	go func() {
+		for {
+			log.Println("[Cache statistics. Len:", Cache.Len(), "Cap:", Cache.Capacity(), "Hits:", Cache.Stats().Hits, "Misses:", strconv.Itoa(int(Cache.Stats().Misses))+"]")
+			time.Sleep(5 * time.Second)
+		}
+	}()
 	switch configs.Conf.DBType {
 	case "ceph":
 		log.Println("[Using Rados file xattrs for metadata]")
@@ -56,19 +96,24 @@ func DBClient(filename string, ops string, id string) (string, error) {
 	if useRados {
 		switch ops {
 		case "get":
-			cache := &Cache
-			file, err := cache.Get(filename)
+			f, err := Cache.Get(filename)
+			file := string(f)
 			//stattemp := "Cached:"
 			if err != nil {
 				file, err = cephget(filename)
 				if err == nil {
-					cache.Put(filename, file)
+
+					//for i := 1; i <= 100000; i++ {
+					//	_ = Cache.Set(filename+strconv.Itoa(i), []byte(file))
+					//}
+
+					_ = Cache.Set(filename, []byte(file))
 					//stattemp = "Fresh:"
 				} else {
 					return "", err
 				}
 			}
-			//fmt.Println(stattemp, cache.Size(), len(Cache.Items), file)
+			//fmt.Println(stattemp, Cache.Len(), Cache.Capacity(), Cache.Stats(), filename)
 			return file, err
 		case "set":
 			_, err := cephset(filename, id)

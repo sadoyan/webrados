@@ -5,9 +5,11 @@ import (
 	"github.com/ceph/go-ceph/rados"
 	"gopkg.in/ini.v1"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type CfgType struct {
@@ -45,7 +47,8 @@ type CfgType struct {
 	MySQLUser        string
 	MySQLPassword    string
 	DBType           string
-	Cache            int
+	CacheItems       int
+	CacheTTL         time.Duration
 }
 
 var Conf = &CfgType{
@@ -82,7 +85,8 @@ var Conf = &CfgType{
 	MySQLUser:        "",
 	MySQLPassword:    "",
 	DBType:           "",
-	Cache:            1024,
+	CacheItems:       0,
+	CacheTTL:         math.MaxInt,
 }
 
 var authorized = make(map[string]string, 10)
@@ -177,35 +181,18 @@ func SetVarsik() {
 		Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
 	}
 
-	//Conf.DBType = cfg.Section("main").Key("database").String()
-	//Conf.RedisServer = cfg.Section("redis").Key("server").String()
-	//redisUser := cfg.Section("redis").Key("username").String()
-	//redisPass := cfg.Section("redis").Key("password").String()
-	//if strings.ToLower(redisUser) != "none" {
-	//	Conf.RedisUser = redisUser
-	//}
-	//if strings.ToLower(redisPass) != "none" {
-	//	Conf.RedisPass = redisPass
-	//}
-	//
-	//redisdb, rederr := cfg.Section("redis").Key("database").Int()
-	//if rederr != nil {
-	//	log.Fatal("Redis database name should be numeric", rederr)
-	//} else {
-	//	Conf.RedisDB = redisdb
-	//}
-	//
-	//Conf.MySQLDB = cfg.Section("mysql").Key("database").String()
-	//Conf.MySQLServer = cfg.Section("mysql").Key("server").String()
-	//Conf.MySQLUser = cfg.Section("mysql").Key("username").String()
-	//Conf.MySQLPassword = cfg.Section("mysql").Key("password").String()
-
 	Conf.DBType = cfg.Section("database").Key("type").String()
 	cache, cerr := cfg.Section("main").Key("cacheitems").Int()
 	if cerr != nil {
 		log.Fatal("Cache capacity should be numeric", cerr)
 	} else {
-		Conf.Cache = cache
+		Conf.CacheItems = cache
+	}
+	cachettl, cttlerr := cfg.Section("main").Key("cachettl").Int()
+	if cttlerr != nil {
+		log.Fatal("Cache TTL should be numeric", cttlerr)
+	} else {
+		Conf.CacheTTL = time.Duration(cachettl)
 	}
 	switch Conf.DBType {
 	case "redis":

@@ -1,3 +1,5 @@
+github.com/allegro/bigcache/v3 v3.1.0 h1:H2Vp8VOvxcrB91o86fUSVJFqeuz8kpyyB02eH3bSzwk=
+github.com/allegro/bigcache/v3 v3.1.0/go.mod h1:aPyh7jEvrog9zAwx5N7+JUQX5dZTSGpxF1LAR4dr35I=
 github.com/aws/aws-sdk-go v1.44.151/go.mod h1:aVsgQcEevwlmQ7qHE9I3h+dtQgpqhFB+i8Phjh7fkwI=
 github.com/ceph/go-ceph v0.19.0 h1:cl5apHt98pCWSoUStiLdl7Mlk3ke8fUGF4HI66Nxy/A=
 github.com/ceph/go-ceph v0.19.0/go.mod h1:sdTcqdDeIPWX3TaR5HCi5YtT+BliI6fFvvWP6Io7VQE=
