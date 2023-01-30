@@ -7,7 +7,6 @@ import (
 	"github.com/allegro/bigcache/v3"
 	"github.com/gomodule/redigo/redis"
 	"log"
-	"strconv"
 	"time"
 )
 
@@ -84,11 +83,6 @@ func DBClient(filename string, ops string, id string) (string, error) {
 			if err != nil {
 				file, err = cephget(filename)
 				if err == nil {
-
-					for i := 1; i <= 100000; i++ {
-						_ = Cache.Set(filename+strconv.Itoa(i), []byte(file))
-					}
-
 					_ = Cache.Set(filename, []byte(file))
 					//stattemp = "Fresh:"
 				} else {
