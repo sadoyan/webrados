@@ -5,11 +5,9 @@ import (
 	"github.com/ceph/go-ceph/rados"
 	"gopkg.in/ini.v1"
 	"log"
-	"math"
 	"os"
 	"strconv"
 	"strings"
-	"time"
 )
 
 type CfgType struct {
@@ -47,8 +45,14 @@ type CfgType struct {
 	MySQLUser        string
 	MySQLPassword    string
 	DBType           string
-	CacheItems       int
-	CacheTTL         time.Duration
+	//CacheItems         int
+	//CacheTTL           time.Duration
+	CacheShards             int
+	CacheLifeWindow         int
+	CacheCleanWindow        int
+	CacheMaxEntriesInWindow int
+	CacheMaxEntrySize       int
+	CacheHardMaxCacheSize   int
 }
 
 var Conf = &CfgType{
@@ -84,9 +88,15 @@ var Conf = &CfgType{
 	MySQLDB:          "",
 	MySQLUser:        "",
 	MySQLPassword:    "",
-	DBType:           "",
-	CacheItems:       0,
-	CacheTTL:         math.MaxInt,
+	DBType:           "ceph",
+	//CacheItems:       0,
+	//CacheTTL:         math.MaxInt,
+	CacheShards:             1024,
+	CacheLifeWindow:         1024,
+	CacheCleanWindow:        20,
+	CacheMaxEntriesInWindow: 600000,
+	CacheMaxEntrySize:       5000,
+	CacheHardMaxCacheSize:   1024,
 }
 
 var authorized = make(map[string]string, 10)
@@ -101,6 +111,14 @@ func stringTObool(key string, value string) bool {
 		log.Fatal("\n Value for " + key + " should be  'yes' or 'no' \n")
 	}
 	return false
+}
+
+func stringTOint(key string) int {
+	a, err := strconv.Atoi(key)
+	if err != nil {
+		log.Fatal("\n Value for " + key + " should be  numeric\n")
+	}
+	return a
 }
 
 var Cfgfile = "config.ini"
@@ -120,15 +138,10 @@ func SetVarsik() {
 	}
 
 	Conf.HttpAddress = cfg.Section("main").Key("listen").String()
-	Conf.DispatchersCount, _ = cfg.Section("main").Key("dispatchers").Int()
+	Conf.DispatchersCount = stringTOint(cfg.Section("main").Key("dispatchers").String())
 	Conf.InternalQueue, _ = cfg.Section("main").Key("internalqueue").Bool()
 	qs, _ := cfg.Section("main").Key("queuesize").Int()
 	Conf.queue = make(chan string, qs)
-
-	//Conf.Uploadmaxpart, err = cfg.Section("main").Key("uploadmaxpart").Int()
-	//if err != nil {
-	//	log.Fatal("Please set numeric value to Uploadmaxpart")
-	//}
 	vsyo, _ := rados.NewConn()
 	_ = vsyo.ReadDefaultConfigFile()
 	_ = vsyo.Connect()
@@ -136,10 +149,7 @@ func SetVarsik() {
 	s, _ := strconv.Atoi(osdMaxObjectSize)
 	Conf.Uploadmaxpart = s
 
-	Conf.Radoconns, err = cfg.Section("main").Key("radoconns").Int()
-	if err != nil {
-		log.Fatal("Please set numeric value to Radoconns")
-	}
+	Conf.Radoconns = stringTOint(cfg.Section("main").Key("radoconns").String())
 
 	Conf.LogStdout = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("logfile").String()))
 	Conf.Logfile = cfg.Section("main").Key("logpath").String()
@@ -181,19 +191,14 @@ func SetVarsik() {
 		Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
 	}
 
+	Conf.CacheShards = stringTOint(cfg.Section("cache").Key("shards").String())
+	Conf.CacheLifeWindow = stringTOint(cfg.Section("cache").Key("lifewindow").String())
+	Conf.CacheCleanWindow = stringTOint(cfg.Section("cache").Key("cleanwindow").String())
+	Conf.CacheMaxEntriesInWindow = stringTOint(cfg.Section("cache").Key("maxrntriesinwindow").String())
+	Conf.CacheMaxEntrySize = stringTOint(cfg.Section("cache").Key("maxentrysize").String())
+	Conf.CacheHardMaxCacheSize = stringTOint(cfg.Section("cache").Key("maxcachemb").String())
+
 	Conf.DBType = cfg.Section("database").Key("type").String()
-	cache, cerr := cfg.Section("main").Key("cacheitems").Int()
-	if cerr != nil {
-		log.Fatal("Cache capacity should be numeric", cerr)
-	} else {
-		Conf.CacheItems = cache
-	}
-	cachettl, cttlerr := cfg.Section("main").Key("cachettl").Int()
-	if cttlerr != nil {
-		log.Fatal("Cache TTL should be numeric", cttlerr)
-	} else {
-		Conf.CacheTTL = time.Duration(cachettl)
-	}
 	switch Conf.DBType {
 	case "redis":
 		Conf.RedisServer = cfg.Section("database").Key("server").String()
@@ -218,6 +223,7 @@ func SetVarsik() {
 		Conf.MySQLUser = cfg.Section("database").Key("username").String()
 		Conf.MySQLPassword = cfg.Section("database").Key("password").String()
 	case "ceph":
+		Conf.DBType = "ceph"
 	}
 
 }

@@ -2,6 +2,7 @@ package web
 
 import (
 	"encoding/json"
+	"metadata"
 	"runtime"
 )
 
@@ -12,25 +13,31 @@ func bToMb(b uint64) uint64 {
 var m runtime.MemStats
 
 type metrics struct {
-	Alloc        uint64 `json:"alloc,int"`
-	Total        uint64 `json:"total,int"`
-	System       uint64 `json:"system,int"`
-	Gcnum        uint32 `json:"gcnum,int"`
-	Frees        uint64 `json:"frees,int"`
-	HeapAlloc    uint64 `json:"heapalloc,int"`
-	HeapIdle     uint64 `json:"heapidle,int"`
-	HeapInuse    uint64 `json:"heapinuse,int"`
-	HeapObjects  uint64 `json:"heapobjects,int"`
-	HeapReleased uint64 `json:"heapreleased,int"`
-	LastGC       uint64 `json:"lastgc,int"`
-	NumForcedGC  uint32 `json:"forcegc,int"`
-	PauseTotalNs uint64 `json:"pausetotal,int"`
-	Goroutines   int    `json:"goroutines,int"`
-	GetCount     int    `json:"getcount,int"`
-	PostCount    int    `json:"postcount,int"`
-	DelCount     int    `json:"delcount,int"`
-	HeadCount    int    `json:"headcount,int"`
+	Alloc         uint64 `json:"alloc,int"`
+	Total         uint64 `json:"total,int"`
+	System        uint64 `json:"system,int"`
+	Gcnum         uint32 `json:"gcnum,int"`
+	Frees         uint64 `json:"frees,int"`
+	HeapAlloc     uint64 `json:"heapalloc,int"`
+	HeapIdle      uint64 `json:"heapidle,int"`
+	HeapInuse     uint64 `json:"heapinuse,int"`
+	HeapObjects   uint64 `json:"heapobjects,int"`
+	HeapReleased  uint64 `json:"heapreleased,int"`
+	LastGC        uint64 `json:"lastgc,int"`
+	NumForcedGC   uint32 `json:"forcegc,int"`
+	PauseTotalNs  uint64 `json:"pausetotal,int"`
+	Goroutines    int    `json:"goroutines,int"`
+	GetCount      int    `json:"getcount,int"`
+	PostCount     int    `json:"postcount,int"`
+	DelCount      int    `json:"delcount,int"`
+	HeadCount     int    `json:"headcount,int"`
+	CacheLen      int    `json:"cacheitems,int"`
+	CacheCapacity int    `json:"cachesize,int"`
+	CacheHits     int64  `json:"cachehits,int"`
+	CacheMiss     int64  `json:"cachemiss,int"`
 }
+
+//log.Println("[Cache statistics. Len:", Cache.Len(), "Cap:", Cache.Capacity(), "Hits:", Cache.Stats().Hits, "Misses:", strconv.Itoa(int(Cache.Stats().Misses))+"]")
 
 var momo = &metrics{PostCount: 0, GetCount: 0, DelCount: 0, HeadCount: 0}
 
@@ -73,7 +80,10 @@ func printStats() (s string) {
 	u.GetCount = momo.GetCount
 	u.HeadCount = momo.HeadCount
 	u.DelCount = momo.DelCount
-	//result, _ := json.Marshal(u)
+	u.CacheLen = metadata.Cache.Len()
+	u.CacheCapacity = metadata.Cache.Capacity()
+	u.CacheHits = metadata.Cache.Stats().Hits
+	u.CacheMiss = metadata.Cache.Stats().Misses
 	result, _ := json.MarshalIndent(u, "", "    ")
 
 	return string(result)

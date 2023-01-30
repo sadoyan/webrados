@@ -10,6 +10,7 @@ require (
 )
 
 require (
+	github.com/allegro/bigcache/v3 v3.1.0 // indirect
 	github.com/ceph/go-ceph v0.19.1-0.20230112054424-122159ed21a1 // indirect
 	github.com/go-sql-driver/mysql v1.7.0 // indirect
 	github.com/gomodule/redigo v1.8.9 // indirect
