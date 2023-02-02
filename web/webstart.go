@@ -146,7 +146,7 @@ func mxhandl(w http.ResponseWriter, _ *http.Request) {
 func playmux1() {
 	mux1 := http.NewServeMux()
 	mux1.HandleFunc("/", mxhandl)
-	users[configs.Conf.ServerUser] = configs.Conf.ServerPass
+	//users[configs.Conf.ServerUser] = configs.Conf.ServerPass
 
 	s2 := http.Server{
 		Addr:         configs.Conf.MonAddress,

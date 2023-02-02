@@ -1,21 +1,21 @@
-**GO-WebRados**
+**WebRados**
 ---------
 
-**Go-WebRados** is a simple and high performance HTTP service for **CEPH** distributed file system. 
+**WebRados** is a simple and high performance HTTP service for **CEPH** distributed file system. 
 The main goal of this tool is to provide simple HTTP interface for **Ceph's** bare **RADOS** layer.
-**Go-WebRados** is not a replacement for **RadosGW** as is does not have all reach APIs and features of RadosGW(S3, Swift, etc ...), instead it stands for simplicity and performance. 
+**WebRados** is not a replacement for **RadosGW** as is does not have all reach APIs and features of RadosGW(S3, Swift, etc ...), instead it stands for simplicity and performance. 
 
-GO-WebRados relies on HTTP methods to interact with RADOS object, thus it can provide access to objects store in RADOS directly from internet browser . 
+WebRados relies on HTTP methods to interact with RADOS object, thus it can provide access to objects store in RADOS directly from internet browser . 
 The ide is to have web accessible storage for millions of relatively small files, which can be accessed from browser directly. 
 
-GO-WebRados relies on C bindings of **Ceph** so in order to run this program you need to install Ceph packages. 
-Running Ceph services on computer which hosts GO-WebRados is not required, it's even better to have a dedicated server or server for running GO-WebRados  
+WebRados relies on C bindings of **Ceph** so in order to run this program you need to install Ceph packages. 
+Running Ceph services on computer which hosts WebRados is not required, it's even better to have a dedicated server or server for running WebRados  
 
 ### **Download and install**
 ---------
 
-You can build GO-WebRados from source or download precompiled binaries. If you already have installed Cephs packages and want to make things easy , 
-just download te GO-WebRados binary, make it executeable, and you are ready to run .  
+You can build WebRados from source or download precompiled binaries. If you already have installed Cephs packages and want to make things easy , 
+just download te WebRados binary, make it executeable, and you are ready to run .  
 
 Building from a source is also easy. 
 
@@ -127,15 +127,15 @@ Configuration file is pretty simple and intuitive.
 
 ### **users.txt file**
 
-GO-Webrados can dynamically update users from ```users.txt``` file . 
+Webrados can dynamically update users from ```users.txt``` file . 
 ```users.txt``` should contain user and md5hash of password divided by space in each line.  
 `echo -n SecretPaSs | md5sum |awk '{print $1}'` on Linux systemd will output md5hash for using it as password in `users.txt` file 
-GO-Webrados will periodically read ```uesrs.txt``` file and automatically update users in memory. 
+Webrados will periodically read ```uesrs.txt``` file and automatically update users in memory. 
 
 ### **Large files**
 
 In order to be able to store large file in RADOS directly files needs to be split to smaller chunks. 
-GO-WebRados will automatically set maximum chunk size to  **OSDMaxObjectSize** of Ceph and split files in accordance to that. 
+WebRados will automatically set maximum chunk size to  **OSDMaxObjectSize** of Ceph and split files in accordance to that. 
 
 ### **Special commands**
 

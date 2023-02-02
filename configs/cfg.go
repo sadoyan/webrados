@@ -3,7 +3,8 @@ package configs
 import (
 	"flag"
 	"github.com/ceph/go-ceph/rados"
-	"gopkg.in/ini.v1"
+	"gopkg.in/yaml.v3"
+	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -11,42 +12,30 @@ import (
 )
 
 type CfgType struct {
-	HttpAddress      string
-	MonAddress       string
-	Monenabled       bool
-	DispatchersCount int
-	//ServerAuth       bool
-	AuthRead         bool
-	AuthWrite        bool
-	ServerUser       string
-	ServerPass       string
-	ClientAuth       bool
-	ClientUser       string
-	ClientPass       string
-	InternalQueue    bool
-	queue            chan string
-	Uploadmaxpart    int
-	Radoconns        int
-	DangeZone        bool
-	Readonly         bool
-	Monuser          string
-	Monpass          string
-	Logfile          string
-	LogStdout        bool
-	AllPools         bool
-	PoolList         []string
-	OSDMaxObjectSize int
-	RedisServer      string
-	RedisUser        string
-	RedisPass        string
-	RedisDB          int
-	MySQLServer      string
-	MySQLDB          string
-	MySQLUser        string
-	MySQLPassword    string
-	DBType           string
-	//CacheItems         int
-	//CacheTTL           time.Duration
+	HttpAddress             string
+	MonAddress              string
+	Monenabled              bool
+	DispatchersCount        int
+	AuthRead                bool
+	AuthWrite               bool
+	ServerUser              string
+	ServerPass              string
+	ClientAuth              bool
+	ClientUser              string
+	ClientPass              string
+	InternalQueue           bool
+	queue                   chan string
+	Uploadmaxpart           int
+	Radoconns               int
+	DangeZone               bool
+	Readonly                bool
+	Monuser                 string
+	Monpass                 string
+	Logfile                 string
+	LogStdout               bool
+	AllPools                bool
+	PoolList                []string
+	OSDMaxObjectSize        int
 	CacheShards             int
 	CacheLifeWindow         int
 	CacheCleanWindow        int
@@ -56,41 +45,29 @@ type CfgType struct {
 }
 
 var Conf = &CfgType{
-	HttpAddress:      "127.0.0.1:8080",
-	MonAddress:       "127.0.0.1:8989",
-	DispatchersCount: 20,
-	//ServerAuth:       false,
-	AuthRead:         false,
-	AuthWrite:        false,
-	ServerUser:       "",
-	ServerPass:       "",
-	ClientAuth:       false,
-	ClientUser:       "",
-	ClientPass:       "",
-	InternalQueue:    false,
-	Monenabled:       false,
-	Monuser:          "",
-	Monpass:          "",
-	Uploadmaxpart:    0,
-	Radoconns:        0,
-	DangeZone:        false,
-	Readonly:         false,
-	LogStdout:        true,
-	Logfile:          "",
-	AllPools:         true,
-	PoolList:         []string{},
-	OSDMaxObjectSize: 0,
-	RedisServer:      "127.0.0.1:6379",
-	RedisUser:        "",
-	RedisPass:        "",
-	RedisDB:          0,
-	MySQLServer:      "127.0.0.1:3108",
-	MySQLDB:          "",
-	MySQLUser:        "",
-	MySQLPassword:    "",
-	DBType:           "ceph",
-	//CacheItems:       0,
-	//CacheTTL:         math.MaxInt,
+	HttpAddress:             "127.0.0.1:8080",
+	MonAddress:              "127.0.0.1:8989",
+	DispatchersCount:        20,
+	AuthRead:                false,
+	AuthWrite:               false,
+	ServerUser:              "",
+	ServerPass:              "",
+	ClientAuth:              false,
+	ClientUser:              "",
+	ClientPass:              "",
+	InternalQueue:           false,
+	Monenabled:              false,
+	Monuser:                 "",
+	Monpass:                 "",
+	Uploadmaxpart:           0,
+	Radoconns:               0,
+	DangeZone:               false,
+	Readonly:                false,
+	LogStdout:               true,
+	Logfile:                 "",
+	AllPools:                true,
+	PoolList:                []string{},
+	OSDMaxObjectSize:        0,
 	CacheShards:             1024,
 	CacheLifeWindow:         1024,
 	CacheCleanWindow:        20,
@@ -121,7 +98,7 @@ func stringTOint(key string) int {
 	return a
 }
 
-var Cfgfile = "config.ini"
+var Cfgfile = "config.yml"
 
 func SetVarsik() {
 
@@ -132,15 +109,22 @@ func SetVarsik() {
 	cfgFile := flag.String("config", Cfgfile, "a string")
 	flag.Parse()
 
-	cfg, err := ini.Load(*cfgFile)
+	data := make(map[interface{}]map[interface{}]interface{})
+
+	yfile, err := ioutil.ReadFile(*cfgFile)
 	if err != nil {
-		log.Fatal("Fail to read config file: %v", err)
+		log.Fatal("Cant read config file:", err)
 	}
 
-	Conf.HttpAddress = cfg.Section("main").Key("listen").String()
-	Conf.DispatchersCount = stringTOint(cfg.Section("main").Key("dispatchers").String())
-	Conf.InternalQueue, _ = cfg.Section("main").Key("internalqueue").Bool()
-	qs, _ := cfg.Section("main").Key("queuesize").Int()
+	err2 := yaml.Unmarshal(yfile, &data)
+	if err2 != nil {
+		log.Fatal("Cant parse config file:", err2)
+	}
+
+	Conf.HttpAddress = data["main"]["listen"].(string)
+	Conf.DispatchersCount = data[("main")]["dispatchers"].(int)
+	Conf.InternalQueue, _ = data["main"]["internalqueue"].(bool)
+	qs, _ := data["main"]["queuesize"].(int)
 	Conf.queue = make(chan string, qs)
 	vsyo, _ := rados.NewConn()
 	_ = vsyo.ReadDefaultConfigFile()
@@ -149,81 +133,48 @@ func SetVarsik() {
 	s, _ := strconv.Atoi(osdMaxObjectSize)
 	Conf.Uploadmaxpart = s
 
-	Conf.Radoconns = stringTOint(cfg.Section("main").Key("radoconns").String())
+	Conf.Radoconns = data["main"]["radoconns"].(int)
 
-	Conf.LogStdout = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("logfile").String()))
-	Conf.Logfile = cfg.Section("main").Key("logpath").String()
-	Conf.ServerUser = cfg.Section("main").Key("serveruser").String()
-	Conf.ServerPass = cfg.Section("main").Key("serverpass").String()
+	Conf.LogStdout = stringTObool("logfile", strings.ToLower(data["main"]["logfile"].(string)))
+	Conf.Logfile = data["main"]["logpath"].(string)
+	Conf.ServerUser = data["main"]["serveruser"].(string)
+	Conf.ServerPass = data["main"]["serverpass"].(string)
 
-	Conf.ClientAuth, _ = cfg.Section("client").Key("clientauth").Bool()
-	Conf.ClientUser = cfg.Section("client").Key("clientuser").String()
-	Conf.ClientPass = cfg.Section("client").Key("clientpass").String()
-
-	Conf.Monenabled, _ = cfg.Section("monitoring").Key("enabled").Bool()
-	Conf.MonAddress = cfg.Section("monitoring").Key("url").String()
-	Conf.Monuser = cfg.Section("monitoring").Key("user").String()
-	Conf.Monpass = cfg.Section("monitoring").Key("pass").String()
+	Conf.Monenabled = stringTObool("monenabled", strings.ToLower(data["monitoring"]["enabled"].(string)))
+	Conf.MonAddress = data["monitoring"]["url"].(string)
+	Conf.Monuser = data["monitoring"]["user"].(string)
+	Conf.Monpass = data["monitoring"]["pass"].(string)
 
 	authorized["main"] = Conf.ServerUser + ":" + Conf.ServerPass
 	authorized["mon"] = Conf.Monuser + ":" + Conf.Monpass
 
-	Conf.AuthWrite = stringTObool("authwrite", strings.ToLower(cfg.Section("main").Key("authwrite").String()))
-	Conf.AuthRead = stringTObool("authread", strings.ToLower(cfg.Section("main").Key("authread").String()))
-	Conf.Readonly = stringTObool("readonly", strings.ToLower(cfg.Section("main").Key("readonly").String()))
-	Conf.AllPools = stringTObool("allpools", strings.ToLower(cfg.Section("main").Key("allpools").String()))
+	Conf.AuthWrite = stringTObool("authwrite", strings.ToLower(data["main"]["authwrite"].(string)))
+	Conf.AuthRead = stringTObool("authread", strings.ToLower(data["main"]["authread"].(string)))
+	Conf.Readonly = stringTObool("readonly", strings.ToLower(data["main"]["readonly"].(string)))
+	Conf.AllPools = stringTObool("allpools", strings.ToLower(data["main"]["allpools"].(string)))
 
 	if !Conf.AllPools {
-		x := cfg.Section("main").Key("poollist").String()
-		z := strings.Replace(x, " ", "", -1)
-		zs := strings.Split(z, ",")
-		Conf.PoolList = zs
+		for _, pool := range data["main"]["poollist"].([]interface{}) {
+			Conf.PoolList = append(Conf.PoolList, pool.(string))
+		}
 	}
 
-	switch stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String())) {
+	switch stringTObool("dangerzone", strings.ToLower(data["main"]["dangerzone"].(string))) {
 	case true:
 		if Conf.Readonly {
 			log.Fatal("Running in read only mode cannot enable dangerous commands")
 		} else {
-			Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
+			Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(data["main"]["dangerzone"].(string)))
 		}
 	case false:
-		Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(cfg.Section("main").Key("dangerzone").String()))
+		Conf.DangeZone = stringTObool("dangerzone", strings.ToLower(data["main"]["dangerzone"].(string)))
 	}
 
-	Conf.CacheShards = stringTOint(cfg.Section("cache").Key("shards").String())
-	Conf.CacheLifeWindow = stringTOint(cfg.Section("cache").Key("lifewindow").String())
-	Conf.CacheCleanWindow = stringTOint(cfg.Section("cache").Key("cleanwindow").String())
-	Conf.CacheMaxEntriesInWindow = stringTOint(cfg.Section("cache").Key("maxrntriesinwindow").String())
-	Conf.CacheMaxEntrySize = stringTOint(cfg.Section("cache").Key("maxentrysize").String())
-	Conf.CacheHardMaxCacheSize = stringTOint(cfg.Section("cache").Key("maxcachemb").String())
-
-	Conf.DBType = cfg.Section("database").Key("type").String()
-	switch Conf.DBType {
-	case "redis":
-		Conf.RedisServer = cfg.Section("database").Key("server").String()
-		redisUser := cfg.Section("database").Key("username").String()
-		redisPass := cfg.Section("database").Key("password").String()
-		if strings.ToLower(redisUser) != "none" {
-			Conf.RedisUser = redisUser
-		}
-		if strings.ToLower(redisPass) != "none" {
-			Conf.RedisPass = redisPass
-		}
-
-		redisdb, rederr := cfg.Section("database").Key("database").Int()
-		if rederr != nil {
-			log.Fatal("Redis database name should be numeric", rederr)
-		} else {
-			Conf.RedisDB = redisdb
-		}
-	case "mysql":
-		Conf.MySQLDB = cfg.Section("database").Key("database").String()
-		Conf.MySQLServer = cfg.Section("database").Key("server").String()
-		Conf.MySQLUser = cfg.Section("database").Key("username").String()
-		Conf.MySQLPassword = cfg.Section("database").Key("password").String()
-	case "ceph":
-		Conf.DBType = "ceph"
-	}
+	Conf.CacheShards = data["cache"]["shards"].(int)
+	Conf.CacheLifeWindow = data["cache"]["lifewindow"].(int)
+	Conf.CacheCleanWindow = data["cache"]["cleanwindow"].(int)
+	Conf.CacheMaxEntriesInWindow = data["cache"]["maxrntriesinwindow"].(int)
+	Conf.CacheMaxEntrySize = data["cache"]["maxentrysize"].(int)
+	Conf.CacheHardMaxCacheSize = data["cache"]["maxcachemb"].(int)
 
 }
