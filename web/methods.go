@@ -19,11 +19,11 @@ import (
 func respCodewriter(f error, w http.ResponseWriter, r *http.Request) string {
 	if strings.Split(f.Error(), ",")[1] == " No such file or directory" {
 		w.WriteHeader(http.StatusNotFound)
-		wrados.Writelog(r.Method, f.Error(), r.URL.String())
+		wrados.Writelog(configs.GetIP(r), r.Method, f.Error(), r.URL.String())
 		return http.StatusText(404) + ": " + r.URL.String() + "\n"
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
-		wrados.Writelog(r.Method, f.Error(), r.URL.String())
+		wrados.Writelog(configs.GetIP(r), r.Method, f.Error(), r.URL.String())
 		return http.StatusText(500) + ": " + r.URL.String() + "\n"
 	}
 }
@@ -69,7 +69,7 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 		}
 	}
 
-	wrados.Writelog(r.Method, xo.Size, "bytes", name, "from", pool)
+	wrados.Writelog(configs.GetIP(r), r.Method, xo.Size, "bytes", name, "from", pool)
 	return true
 }
 
@@ -343,13 +343,13 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							} else {
 								segment = name + "-0"
 								fileSegments = append(fileSegments, segment)
-								wrados.Writelog(r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
+								wrados.Writelog(configs.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
 							}
 						}
 						_, eerr := reader.Read(buffer)
 						if eerr != nil {
 							_ = ioct.Append(segment, writebuffer)
-							wrados.Writelog(r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
+							wrados.Writelog(configs.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
 							writebuffer = nil
 							break
 						}
@@ -359,7 +359,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 							segment = name + "-" + strconv.Itoa(totalbytes)
 							_ = ioct.Create(segment, rados.CreateOption(configs.Conf.Uploadmaxpart-ssiz1))
 							fileSegments = append(fileSegments, segment)
-							wrados.Writelog(r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
+							wrados.Writelog(configs.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
 							bytecalc = 0
 						}
 						if len(writebuffer) == ssize {
@@ -384,21 +384,21 @@ func Put(w http.ResponseWriter, r *http.Request) {
 					//log.Printf("Execution time %s\n", time.Since(start))
 				}
 
-				wrados.Writelog(r.Method, r.Header.Get("Content-Length"), "bytes", r.URL, "to", pool)
+				wrados.Writelog(configs.GetIP(r), r.Method, r.Header.Get("Content-Length"), "bytes", r.URL, "to", pool)
 			} else {
-				wrados.Writelog("Invalid pool name")
+				wrados.Writelog(configs.GetIP(r), "Invalid pool name")
 				w.WriteHeader(http.StatusInternalServerError)
 				_, _ = w.Write([]byte("500: Invalid pool name \n"))
 			}
 		} else {
-			wrados.Writelog("File path is too short")
+			wrados.Writelog(configs.GetIP(r), "File path is too short")
 			w.WriteHeader(http.StatusInternalServerError)
 			_, _ = w.Write([]byte("500: File path is too short \n"))
 		}
 	default:
 		w.WriteHeader(http.StatusForbidden)
 		msg := "Server is running in read only mode ! \n"
-		wrados.Writelog(msg)
+		wrados.Writelog(configs.GetIP(r), msg)
 		_, _ = w.Write([]byte(msg))
 	}
 }
@@ -435,7 +435,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 					if f != nil {
 						_, _ = fmt.Fprintf(w, respCodewriter(f, w, r))
 					} else {
-						wrados.Writelog(r.Method, filez[filename], "from", pool)
+						wrados.Writelog(configs.GetIP(r), r.Method, filez[filename], "from", pool)
 						msg := http.StatusText(200) + ", Deleted: " + r.URL.String() + "\n"
 						_, _ = w.Write([]byte(msg))
 					}
@@ -447,7 +447,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusForbidden)
 		msg := "Dangerous commands are disabled ! \n"
-		wrados.Writelog(msg)
+		wrados.Writelog(configs.GetIP(r), msg)
 		_, _ = w.Write([]byte(msg))
 	}
 }

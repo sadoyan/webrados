@@ -12,10 +12,17 @@ import (
 )
 
 type CfgType struct {
-	HttpAddress             string
-	MonAddress              string
-	Monenabled              bool
-	DispatchersCount        int
+	HttpAddress      string
+	MonAddress       string
+	Monenabled       bool
+	DispatchersCount int
+	//AuthType                string
+	AuthApi                 bool
+	AuthBasic               bool
+	AuthJWT                 bool
+	Apikey                  string
+	JWTSecret               []byte
+	UsersFile               string
 	AuthRead                bool
 	AuthWrite               bool
 	ServerUser              string
@@ -45,11 +52,18 @@ type CfgType struct {
 }
 
 var Conf = &CfgType{
-	HttpAddress:             "127.0.0.1:8080",
-	MonAddress:              "127.0.0.1:8989",
-	DispatchersCount:        20,
+	HttpAddress:      "127.0.0.1:8080",
+	MonAddress:       "127.0.0.1:8989",
+	DispatchersCount: 20,
+	//AuthType:                "none",
+	AuthApi:                 false,
+	AuthBasic:               false,
+	AuthJWT:                 false,
+	Apikey:                  os.Getenv("APIKEY"),
+	JWTSecret:               []byte(os.Getenv("JWTSECRET")),
 	AuthRead:                false,
 	AuthWrite:               false,
+	UsersFile:               "",
 	ServerUser:              "",
 	ServerPass:              "",
 	ClientAuth:              false,
@@ -137,6 +151,7 @@ func SetVarsik() {
 
 	Conf.LogStdout = stringTObool("logfile", strings.ToLower(data["main"]["logfile"].(string)))
 	Conf.Logfile = data["main"]["logpath"].(string)
+	Conf.UsersFile = data["main"]["usersfile"].(string)
 	Conf.ServerUser = data["main"]["serveruser"].(string)
 	Conf.ServerPass = data["main"]["serverpass"].(string)
 
@@ -153,6 +168,19 @@ func SetVarsik() {
 	Conf.Readonly = stringTObool("readonly", strings.ToLower(data["main"]["readonly"].(string)))
 	Conf.AllPools = stringTObool("allpools", strings.ToLower(data["main"]["allpools"].(string)))
 
+	authtype := data["main"]["authtype"].(string)
+
+	switch strings.ToLower(authtype) {
+	case "basic":
+		Conf.AuthBasic = true
+	case "jwt":
+		Conf.AuthJWT = true
+	case "apikey":
+		Conf.AuthApi = true
+	}
+	//fmt.Println("---------------------------------------------------------------------------------------------------")
+	//fmt.Println(authtype, Conf.AuthBasic, Conf.AuthApi, Conf.AuthJWT, string(Conf.JWTSecret), Conf.Apikey)
+	//fmt.Println("---------------------------------------------------------------------------------------------------")
 	if !Conf.AllPools {
 		for _, pool := range data["main"]["poollist"].([]interface{}) {
 			Conf.PoolList = append(Conf.PoolList, pool.(string))

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"auth"
 	"configs"
 	"web"
 	"wrados"
@@ -9,7 +10,7 @@ import (
 func main() {
 	configs.SetVarsik()
 	web.PopulatemMimes()
-	go web.PopulateUsers()
+	go auth.PopulateBAusers()
 	go wrados.LsPools()
 	go wrados.LogToFile()
 	web.RunServer()
