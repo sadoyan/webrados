@@ -16,7 +16,7 @@ main:
     - donuts
     - images
   usersfile: users.txt
-  authtype: jwt # apikey , basic, jwt, none
+  authtype: basic # apikey , basic, jwt, none
 cache:
   shards: 1024
   lifewindow: 10

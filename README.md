@@ -140,13 +140,27 @@ WebRados will automatically set maximum chunk size to  **OSDMaxObjectSize** of C
 **HTTP GET** http://{BINDADDRESS}/{POOLNAME}/{FILENAME}?info
 Return information about requested file in json format.
 
-```curl -s  http://ceph1:8080/bublics/katana.mp4?info | python -mjson.tool```
+```curl -s  http://ceph1:8080/bublics/katana.mp4?info```
 
 ```json
 {
   "name": "katana.mp4",
   "pool": "bublics",
-  "segments": "11",
-  "size": "471861144"
+  "size": 471861144,
+  "parts": 11
 }
 ```
+**HTTP DELETE** http://{BINDADDRESS}/{POOLNAME}/{FILENAME}?cache
+Removes entry of given file from metadata cache
+
+```curl -XDELETE  http://ceph1:8080/bublics/katana.mp4?cache```
+
+**HTTP DELETE** http://{BINDADDRESS}/?cache
+Purges the metadata cache and statistics.
+
+```curl -XDELETE  http://ceph1:8080/?cache```
+
+**HTTP DELETE** http://{BINDADDRESS}/?cachestats
+Purges metadata cache statistics without removing entries. 
+
+```curl -XDELETE  http://ceph1:8080/?cachestats```

@@ -6,10 +6,10 @@ import (
 )
 
 type FileInfo struct {
-	Name     string `json:"name"`
-	Size     string `json:"size"`
-	Pool     string `json:"pool"`
-	Segments string `json:"segments"`
+	Name  string `json:"name"`
+	Pool  string `json:"pool"`
+	Size  int    `json:"size"`
+	Parts int    `json:"parts"`
 }
 
 type mimetypes struct {

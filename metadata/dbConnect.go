@@ -86,6 +86,8 @@ func DBClient(filename string, ops string, id string) (string, error) {
 		}
 		return id, nil
 	case "del":
+		_ = Cache.Delete(filename)
+
 		return "Done", nil
 	}
 	return "GGG", nil

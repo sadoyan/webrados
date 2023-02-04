@@ -98,8 +98,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			filename, eror := metadata.DBClient(pool+"/"+name, "get", "")
 			xo, lo := ioctx.Stat(name)
 			if lo != nil {
-				errormsg := strings.Split(fmt.Sprint(lo), ",")
-				wrados.Writelog(errormsg)
+				errormsg := strings.Split(lo.Error(), ",")
+				wrados.Writelog(configs.GetIP(r), r.Method, r.URL, errormsg[len(errormsg)-1])
 				switch errormsg[len(errormsg)-1] {
 				case " No such file or directory":
 					w.WriteHeader(http.StatusNotFound)
@@ -121,18 +121,17 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				} else {
 					if eror == nil {
 						ns := strings.Split(filename, ",")
-						size := ""
+						var size int
 						if len(ns) > 1 {
-							size = ns[len(ns)-1]
+							size, _ = strconv.Atoi(ns[len(ns)-1])
 						} else {
-							size = strconv.Itoa(int(xo.Size))
+							size = int(xo.Size)
 						}
-						numbSegments := strconv.Itoa(len(ns))
 						fileInfo := &FileInfo{
-							Size:     size,
-							Pool:     pool,
-							Segments: numbSegments,
-							Name:     name,
+							Size:  size,
+							Pool:  pool,
+							Parts: len(ns),
+							Name:  name,
 						}
 						//b, _ := json.Marshal(fileInfo)
 						b, _ := json.MarshalIndent(fileInfo, "", "    ")
@@ -406,11 +405,32 @@ func Put(w http.ResponseWriter, r *http.Request) {
 func Del(w http.ResponseWriter, r *http.Request) {
 	switch configs.Conf.DangeZone {
 	case true:
+		_, purgecache := r.URL.Query()["cache"]
+		if purgecache {
+			_ = metadata.Cache.Reset()
+			_ = metadata.Cache.ResetStats()
+			wrados.Writelog(configs.GetIP(r), r.Method, "Purging everything from cache")
+			return
+		}
+		_, cachestats := r.URL.Query()["cachestats"]
+		if cachestats {
+			_ = metadata.Cache.ResetStats()
+			wrados.Writelog(configs.GetIP(r), r.Method, "Resetting cache statistics")
+			return
+		}
 
 		s := strings.Split(r.URL.Path, "/")
+
 		if len(s) >= 3 {
 			pool := s[1]
 			name := strings.Join(s[2:], "/")
+
+			_, delcache := r.URL.Query()["cache"]
+			if delcache {
+				_, _ = metadata.DBClient(pool+"/"+name, "del", "")
+				wrados.Writelog(configs.GetIP(r), r.Method, "removing", pool+"/"+name, "from cache")
+				return
+			}
 			ss, eror := metadata.DBClient(pool+"/"+name, "get", "")
 			var filez []string
 			if _, ok := wrados.Rconnect.Poolnames[pool]; ok {
