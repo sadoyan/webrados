@@ -99,6 +99,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			xo, lo := ioctx.Stat(name)
 			if lo != nil {
 				errormsg := strings.Split(lo.Error(), ",")
+
 				wrados.Writelog(configs.GetIP(r), r.Method, r.URL, errormsg[len(errormsg)-1])
 				switch errormsg[len(errormsg)-1] {
 				case " No such file or directory":
