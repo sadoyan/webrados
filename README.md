@@ -2,20 +2,20 @@
 ---------
 
 **WebRados** is a simple and high performance HTTP service for **CEPH** distributed file system.
-The main goal of this tool is to provide simple HTTP interface for **Ceph's** bare **RADOS** layer.
+It's for providing simple HTTP interface for **Ceph's** bare **RADOS** layer.
 **WebRados** is not a replacement for **RadosGW** as is does not have all reach APIs and features of RadosGW(S3, Swift, etc ...), instead it stands for simplicity and performance.
 
 WebRados relies on HTTP methods to interact with RADOS object, thus it can provide access to objects store in RADOS directly from internet browser .
 The ide is to have web accessible storage for millions of relatively small files, which can be accessed from browser directly.
 
-WebRados relies on C bindings of **Ceph** so in order to run this program you need to install Ceph packages.
-Running Ceph services on computer which hosts WebRados is not required, it's even better to have a dedicated server or server for running WebRados
+WebRados relies on C bindings of **Ceph**, so in order to run this program you need to install Ceph packages.
+Running Ceph services on computer which hosts WebRados is not required, it's even better to have a dedicated server or pool of servers for running WebRados
 
 ### **Download and install**
 ---------
 
 You can build WebRados from source or download precompiled binaries. If you already have installed Cephs packages and want to make things easy ,
-just download te WebRados binary, make it executeable, and you are ready to run .
+just download te WebRados binary, make it executable, and you are ready to run .
 
 Building from a source is also easy.
 
@@ -30,8 +30,7 @@ do build .
 ### **Configuration**
 ---------
 
-Configuration paramaters are stored in ```config.ini``` file, which should be in running directory.
-Sample config file, with reasoneable defaulr ships with source code.
+Example configuration file,  ```config.yml``` , with reasonable defaults is in root directory of the source tree.
 
 ```yaml
 main:
@@ -88,14 +87,13 @@ Configuration file is pretty simple and intuitive.
 | **dispatchers**   | Number of threads for webserver.                                                                                           |
 | **serveruser**    | Static user.                                                                                                               |
 | **serverpass**    | MD5 hash of password for static user.                                                                                      |                                                   | 
-| **dangerzone**    | Enable destructive methods and commands (DELETE).                                                                          |
+| **dangerzone**    | Enable HTTP DELETE method.                                                                                                 |
 | **readonly**      | Enable readonly mode. If 'yes' only GET is allowed.                                                                        |
 | **authread**      | Require authentication for GET only.                                                                                       |
 | **authwrite**     | Require authentication for POST/PUT/DELETE.                                                                                |
 | **radoconns**     | Number of connection to CEPH.                                                                                              |
 | **logfile**       | Log to file, if 'no' logs are sent to stdout.                                                                              |
 | **logpath**       | Path for log file.                                                                                                         |
-| **uploadmaxpart** | Maximum file chunk size (Sbould be amaller or erqual ro `osd max object size`).                                            | 
 | **allpools:**     | yes/no . If yes program will scan ceph and enable access via web to all pool.                                              | 
 | **poollist:**     | Works only if **allpools** is set to **no**.                                                                               |  
 | **usersfile**     | Path for file containing list of users with `username passwordhash` format separated by new line.                          |
@@ -150,6 +148,7 @@ Return information about requested file in json format.
   "parts": 11
 }
 ```
+
 **HTTP DELETE** http://{BINDADDRESS}/{POOLNAME}/{FILENAME}?cache
 Removes entry of given file from metadata cache
 
@@ -161,6 +160,6 @@ Purges the metadata cache and statistics.
 ```curl -XDELETE  http://ceph1:8080/?cache```
 
 **HTTP DELETE** http://{BINDADDRESS}/?cachestats
-Purges metadata cache statistics without removing entries. 
+Purges metadata cache statistics without removing entries.
 
 ```curl -XDELETE  http://ceph1:8080/?cachestats```
