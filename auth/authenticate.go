@@ -85,10 +85,6 @@ func GenJWTtoken(in []byte) ([]byte, error) {
 		wrados.Writelog("Error Getting JWT signed key:", err2)
 		return nil, err2
 	}
-	//fmt.Println("---------------------------------------------------------------------------------------------------")
-	//fmt.Println(jwtin.Username, jwtin.Password)
-	//fmt.Println(tokenString)
-	//fmt.Println("---------------------------------------------------------------------------------------------------")
 	return []byte(tokenString), nil
 }
 
