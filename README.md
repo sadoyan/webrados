@@ -146,10 +146,11 @@ WebRados will automatically set maximum chunk size to  **OSDMaxObjectSize** of C
 
 ### **Special commands**
 
-**HTTP GET** http://{BINDADDRESS}/{POOLNAME}/{FILENAME}?info
-Return information about requested file in json format.
+**HTTP GET** http://{BINDADDRESS}/{POOLNAME}/{FILENAME}?info 
+Returns information about requested file in json format.
 
-```curl -s  http://ceph1:8080/bublics/katana.mp4?info```
+```
+curl -s  http://ceph1:8080/bublics/katana.mp4?info```
 
 ```
 {
