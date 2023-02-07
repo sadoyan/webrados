@@ -2,25 +2,24 @@ package configs
 
 import (
 	"flag"
-	"github.com/ceph/go-ceph/rados"
-	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/ceph/go-ceph/rados"
+	"gopkg.in/yaml.v3"
 )
 
 type CfgType struct {
-	HttpAddress      string
-	MonAddress       string
-	Monenabled       bool
-	DispatchersCount int
-	//AuthType                string
+	HttpAddress             string
+	MonAddress              string
+	Monenabled              bool
+	DispatchersCount        int
 	AuthApi                 bool
 	AuthBasic               bool
 	AuthJWT                 bool
-	Apikey                  string
 	JWTSecret               []byte
 	UsersFile               string
 	AuthRead                bool
@@ -52,14 +51,12 @@ type CfgType struct {
 }
 
 var Conf = &CfgType{
-	HttpAddress:      "127.0.0.1:8080",
-	MonAddress:       "127.0.0.1:8989",
-	DispatchersCount: 20,
-	//AuthType:                "none",
+	HttpAddress:             "127.0.0.1:8080",
+	MonAddress:              "127.0.0.1:8989",
+	DispatchersCount:        20,
 	AuthApi:                 false,
 	AuthBasic:               false,
 	AuthJWT:                 false,
-	Apikey:                  os.Getenv("APIKEY"),
 	JWTSecret:               []byte(os.Getenv("JWTSECRET")),
 	AuthRead:                false,
 	AuthWrite:               false,
@@ -172,10 +169,13 @@ func SetVarsik() {
 
 	switch strings.ToLower(authtype) {
 	case "basic":
+		log.Println("[Using HTTP basic authentication]")
 		Conf.AuthBasic = true
 	case "jwt":
+		log.Println("[Using JWT authentication]")
 		Conf.AuthJWT = true
 	case "apikey":
+		log.Println("[Using ApiKey authentication]")
 		Conf.AuthApi = true
 	}
 	//fmt.Println("---------------------------------------------------------------------------------------------------")

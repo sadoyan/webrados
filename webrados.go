@@ -10,7 +10,7 @@ import (
 func main() {
 	configs.SetVarsik()
 	web.PopulatemMimes()
-	go auth.PopulateBAusers()
+	go auth.PopulateUsers()
 	go wrados.LsPools()
 	go wrados.LogToFile()
 	web.RunServer()

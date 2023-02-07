@@ -8,19 +8,29 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"github.com/golang-jwt/jwt"
 	"net/http"
 	"os"
 	"strings"
+	"sync"
 	"time"
 	"wrados"
+
+	"github.com/golang-jwt/jwt"
 )
 
-var BAusers = map[string]string{
-	//"test":  "secret",
+type AuthPool struct {
+	Basic map[string]string
+	Api   map[string]bool
+	sync.RWMutex
 }
 
-func PopulateBAusers() {
+var Auth = &AuthPool{
+	Basic:   make(map[string]string),
+	Api:     make(map[string]bool),
+	RWMutex: sync.RWMutex{},
+}
+
+func PopulateUsers() {
 	for {
 		c, e := os.Open(configs.Conf.UsersFile)
 		content := bufio.NewScanner(c)
@@ -29,11 +39,22 @@ func PopulateBAusers() {
 		}
 
 		for content.Scan() {
-			if len(content.Text()) > 0 {
+			if len(content.Text()) > 0 && !strings.HasPrefix(content.Text(), "#") {
 				z := strings.Split(content.Text(), " ")
-				if _, ok := BAusers[z[0]]; !ok {
-					wrados.Writelog("Found new user: " + z[0] + ", enabling!")
-					BAusers[z[0]] = z[1]
+				if len(z) == 2 {
+					if _, ok := Auth.Basic[z[0]]; !ok {
+						// wrados.Writelog("Found new user: " + z[0] + ", enabling!")
+						Auth.Lock()
+						Auth.Basic[z[0]] = z[1]
+						Auth.Unlock()
+					}
+				} else if len(z) == 1 {
+					if _, ok := Auth.Api[z[0]]; !ok {
+						// wrados.Writelog("Found new apikey: " + z[0] + ", enabling!")
+						Auth.Lock()
+						Auth.Api[z[0]] = true
+						Auth.Unlock()
+					}
 				}
 			}
 		}
@@ -49,7 +70,7 @@ func isBAauthorised(username, password string) bool {
 	md5HashInBytes := md5.Sum([]byte(password))
 	md5HashInString := hex.EncodeToString(md5HashInBytes[:])
 
-	pass, ok := BAusers[username]
+	pass, ok := Auth.Basic[username]
 
 	if !ok {
 		return false
@@ -113,7 +134,7 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) bool {
 
 	switch {
 	case configs.Conf.AuthApi:
-		if r.Header.Get("X-API-KEY") == configs.Conf.Apikey {
+		if _, ok := Auth.Api[r.Header.Get("X-API-KEY")]; ok {
 			return true
 		} else {
 			wrados.Writelog(configs.GetIP(r), r.Method, "Invalid APIKEY", r.URL)
