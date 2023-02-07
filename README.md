@@ -151,8 +151,9 @@ Returns information about requested file in json format.
 
 ```
 curl -s  http://ceph1:8080/bublics/katana.mp4?info```
-
 ```
+
+```json
 {
   "name": "katana.mp4",
   "pool": "bublics",
