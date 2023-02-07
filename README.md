@@ -126,7 +126,8 @@ Configuration file is pretty simple and intuitive.
 
 Webrados can dynamically update users and API keys from ```users.txt``` file .
 If you are using Basic Auth, ```users.txt``` should contain user and md5hash of password divided by space in each line.  
-```echo -n SecretPaSs | md5sum |awk '{print $1}'``` on Linux systemd will output md5hash for using it as password in ```users.txt``` file
+
+On Linux systems ```echo -n SecretPaSs | md5sum |awk '{print $1}'```  will output md5hash for using it as password in ```users.txt``` file
 
 If you are using API keys ```users.txt``` should contain these keys seprated by new line. 
 
