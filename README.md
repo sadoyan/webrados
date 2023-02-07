@@ -133,7 +133,11 @@ If you are using API keys ```users.txt``` should contain these keys seprated by 
 
 Webrados will periodically read ```uesrs.txt``` file and automatically update users in memory.
 
-If you are using JWT Authenticatio, you should set the value of yout JWT Setcret as **JWTSECRET** OS enviroment. ```export JWTSECRET='Super$ecter123765@'```
+If you are using JWT Authenticatio, you should set the value of yout JWT Setcret as **JWTSECRET** OS enviroment. 
+
+```
+export JWTSECRET='Super$ecter123765@'
+```
 
 ### **Large files**
 
