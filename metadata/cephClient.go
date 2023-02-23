@@ -16,7 +16,7 @@ func cephget(filename string) (string, error) {
 	md := strings.Split(filename, "/")
 	randindex := rand.Intn(len(wrados.Rconnect.Connection))
 	ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(md[0])
-	defer ioctx.Destroy()
+	//defer ioctx.Destroy()
 	if e != nil {
 		wrados.Writelog("Metadata direct read error:", e)
 		return "Metadata direct read error:", e
@@ -31,7 +31,7 @@ func cephset(filename string, metadata string) (string, error) {
 	md := strings.Split(filename, "/")
 	randindex := rand.Intn(len(wrados.Rconnect.Connection))
 	ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(md[0])
-	defer ioctx.Destroy()
+	//defer ioctx.Destroy()
 	if e != nil {
 		wrados.Writelog("Metadata direct write error:", e)
 		return "Metadata direct write error:", e

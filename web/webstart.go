@@ -11,7 +11,6 @@ import (
 )
 
 func dynHandler(w http.ResponseWriter, r *http.Request) {
-	//fmt.Println(r.Header, r.Method)
 	switch r.Method {
 	case "GET":
 		if configs.Conf.AuthRead {
@@ -50,8 +49,6 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 			momo.incrementDel()
 			Del(w, r)
 		}
-	//	momo.incrementHead()
-	//	Head(w, r)
 	default:
 		_, _ = fmt.Fprintf(w, "Sorry, only GET, POST, PUT, HEAD and DELETE methods are supported.\n")
 	}

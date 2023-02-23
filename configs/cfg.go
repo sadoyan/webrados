@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 
-	"github.com/ceph/go-ceph/rados"
 	"gopkg.in/yaml.v3"
 )
 
@@ -48,6 +48,7 @@ type CfgType struct {
 	CacheMaxEntriesInWindow int
 	CacheMaxEntrySize       int
 	CacheHardMaxCacheSize   int
+	sync.RWMutex
 }
 
 var Conf = &CfgType{
@@ -85,6 +86,7 @@ var Conf = &CfgType{
 	CacheMaxEntriesInWindow: 600000,
 	CacheMaxEntrySize:       5000,
 	CacheHardMaxCacheSize:   1024,
+	RWMutex:                 sync.RWMutex{},
 }
 
 var authorized = make(map[string]string, 10)
@@ -109,15 +111,11 @@ func stringTOint(key string) int {
 	return a
 }
 
-var Cfgfile = "config.yml"
+var Cfgfile string
 
 func SetVarsik() {
 
-	if len(os.Args) >= 2 {
-		Cfgfile = os.Args[1]
-	}
-
-	cfgFile := flag.String("config", Cfgfile, "a string")
+	cfgFile := flag.String("config", "config.yml", "a string")
 	flag.Parse()
 
 	data := make(map[interface{}]map[interface{}]interface{})
@@ -137,15 +135,7 @@ func SetVarsik() {
 	Conf.InternalQueue, _ = data["main"]["internalqueue"].(bool)
 	qs, _ := data["main"]["queuesize"].(int)
 	Conf.queue = make(chan string, qs)
-	vsyo, _ := rados.NewConn()
-	_ = vsyo.ReadDefaultConfigFile()
-	_ = vsyo.Connect()
-	osdMaxObjectSize, _ := vsyo.GetConfigOption("osd max object size")
-	s, _ := strconv.Atoi(osdMaxObjectSize)
-	Conf.Uploadmaxpart = s
-
 	Conf.Radoconns = data["main"]["radoconns"].(int)
-
 	Conf.LogStdout = stringTObool("logfile", strings.ToLower(data["main"]["logfile"].(string)))
 	Conf.Logfile = data["main"]["logpath"].(string)
 	Conf.UsersFile = data["main"]["usersfile"].(string)
@@ -178,9 +168,7 @@ func SetVarsik() {
 		log.Println("[Using ApiKey authentication]")
 		Conf.AuthApi = true
 	}
-	//fmt.Println("---------------------------------------------------------------------------------------------------")
-	//fmt.Println(authtype, Conf.AuthBasic, Conf.AuthApi, Conf.AuthJWT, string(Conf.JWTSecret), Conf.Apikey)
-	//fmt.Println("---------------------------------------------------------------------------------------------------")
+
 	if !Conf.AllPools {
 		for _, pool := range data["main"]["poollist"].([]interface{}) {
 			Conf.PoolList = append(Conf.PoolList, pool.(string))

@@ -14,13 +14,15 @@ type FileInfo struct {
 
 type mimetypes struct {
 	Videos map[string]string
+	Audios map[string]string
 }
 
 var HttpMimes = &mimetypes{
 	Videos: map[string]string{},
+	Audios: map[string]string{},
 }
 
-func PopulatemMimes() {
+func (r *mimetypes) Populate() {
 	HttpMimes.Videos["1d-interleaved-parityfec"] = "video/1d-interleaved-parityfec"
 	HttpMimes.Videos["3gpp"] = "video/3gpp"
 	HttpMimes.Videos["3gpp2"] = "video/3gpp2"
@@ -56,7 +58,6 @@ func PopulatemMimes() {
 	HttpMimes.Videos["mpeg4-generic"] = "video/mpeg4-generic"
 	HttpMimes.Videos["mkv"] = "video/x-matroska"
 	HttpMimes.Videos["nv"] = "video/nv"
-	HttpMimes.Videos["ogg"] = "video/ogg"
 	HttpMimes.Videos["parityfec"] = "video/parityfec"
 	HttpMimes.Videos["pointer"] = "video/pointer"
 	HttpMimes.Videos["quicktime"] = "video/quicktime"
@@ -110,6 +111,26 @@ func PopulatemMimes() {
 	HttpMimes.Videos["vp8"] = "video/vp8"
 	HttpMimes.Videos["vp9"] = "video/vp9"
 	HttpMimes.Videos["webm"] = "video/webm"
+	HttpMimes.Audios["wav"] = "audio/x-wav"
+	HttpMimes.Audios["aifc"] = "audio/x-aifc"
+	HttpMimes.Audios["aiff"] = "audio/x-aiff"
+	HttpMimes.Audios["mp3"] = "audio/mpeg"
+	HttpMimes.Audios["ogg"] = "application/ogg"
+	HttpMimes.Audios["m4a"] = "audio/mp4"
+	HttpMimes.Audios["mp2"] = "audio/mpeg"
+
+}
+
+func (r *mimetypes) Lookup(mt string) (string, bool) {
+	mvi, vok := HttpMimes.Videos[mt]
+	if vok {
+		return mvi, true
+	}
+	mau, mak := HttpMimes.Audios[mt]
+	if mak {
+		return mau, true
+	}
+	return "application/octet-stream", false
 }
 
 func PrintMemUsage() {
