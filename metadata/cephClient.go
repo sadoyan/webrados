@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"strings"
+	"tools"
 	"wrados"
 )
 
@@ -18,7 +19,7 @@ func cephget(filename string) (string, error) {
 	ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(md[0])
 	//defer ioctx.Destroy()
 	if e != nil {
-		wrados.Writelog("Metadata direct read error:", e)
+		tools.WriteLogs("Metadata direct read error:", e)
 		return "Metadata direct read error:", e
 	}
 	//_ = ioctx.SetXattr(md[1], "segments", []byte("h.mp4-0,h.mp4-132169727,h.mp4-264339454,h.mp4-396509181,h.mp4-528678908,547579107"))
@@ -33,7 +34,7 @@ func cephset(filename string, metadata string) (string, error) {
 	ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(md[0])
 	//defer ioctx.Destroy()
 	if e != nil {
-		wrados.Writelog("Metadata direct write error:", e)
+		tools.WriteLogs("Metadata direct write error:", e)
 		return "Metadata direct write error:", e
 	}
 	_ = ioctx.SetXattr(md[1], "segments", []byte(metadata))

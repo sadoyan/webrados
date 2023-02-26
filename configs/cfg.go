@@ -2,43 +2,43 @@ package configs
 
 import (
 	"flag"
+	"gopkg.in/yaml.v3"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"strings"
 	"sync"
-
-	"gopkg.in/yaml.v3"
+	"tools"
 )
 
 type CfgType struct {
-	HttpAddress             string
-	MonAddress              string
-	Monenabled              bool
-	DispatchersCount        int
-	AuthApi                 bool
-	AuthBasic               bool
-	AuthJWT                 bool
-	JWTSecret               []byte
-	UsersFile               string
-	AuthRead                bool
-	AuthWrite               bool
-	ServerUser              string
-	ServerPass              string
-	ClientAuth              bool
-	ClientUser              string
-	ClientPass              string
-	InternalQueue           bool
-	queue                   chan string
-	Uploadmaxpart           int
-	Radoconns               int
-	DangeZone               bool
-	Readonly                bool
-	Monuser                 string
-	Monpass                 string
-	Logfile                 string
-	LogStdout               bool
+	HttpAddress      string
+	MonAddress       string
+	Monenabled       bool
+	DispatchersCount int
+	AuthApi          bool
+	AuthBasic        bool
+	AuthJWT          bool
+	JWTSecret        []byte
+	UsersFile        string
+	AuthRead         bool
+	AuthWrite        bool
+	ServerUser       string
+	ServerPass       string
+	ClientAuth       bool
+	ClientUser       string
+	ClientPass       string
+	InternalQueue    bool
+	queue            chan string
+	Uploadmaxpart    int
+	Radoconns        int
+	DangeZone        bool
+	Readonly         bool
+	Monuser          string
+	Monpass          string
+	//Logfile                 string
+	//LogStdout               bool
 	AllPools                bool
 	PoolList                []string
 	OSDMaxObjectSize        int
@@ -52,31 +52,31 @@ type CfgType struct {
 }
 
 var Conf = &CfgType{
-	HttpAddress:             "127.0.0.1:8080",
-	MonAddress:              "127.0.0.1:8989",
-	DispatchersCount:        20,
-	AuthApi:                 false,
-	AuthBasic:               false,
-	AuthJWT:                 false,
-	JWTSecret:               []byte(os.Getenv("JWTSECRET")),
-	AuthRead:                false,
-	AuthWrite:               false,
-	UsersFile:               "",
-	ServerUser:              "",
-	ServerPass:              "",
-	ClientAuth:              false,
-	ClientUser:              "",
-	ClientPass:              "",
-	InternalQueue:           false,
-	Monenabled:              false,
-	Monuser:                 "",
-	Monpass:                 "",
-	Uploadmaxpart:           0,
-	Radoconns:               0,
-	DangeZone:               false,
-	Readonly:                false,
-	LogStdout:               true,
-	Logfile:                 "",
+	HttpAddress:      "127.0.0.1:8080",
+	MonAddress:       "127.0.0.1:8989",
+	DispatchersCount: 20,
+	AuthApi:          false,
+	AuthBasic:        false,
+	AuthJWT:          false,
+	JWTSecret:        []byte(os.Getenv("JWTSECRET")),
+	AuthRead:         false,
+	AuthWrite:        false,
+	UsersFile:        "",
+	ServerUser:       "",
+	ServerPass:       "",
+	ClientAuth:       false,
+	ClientUser:       "",
+	ClientPass:       "",
+	InternalQueue:    false,
+	Monenabled:       false,
+	Monuser:          "",
+	Monpass:          "",
+	Uploadmaxpart:    0,
+	Radoconns:        0,
+	DangeZone:        false,
+	Readonly:         false,
+	//LogStdout:               true,
+	//Logfile:                 "",
 	AllPools:                true,
 	PoolList:                []string{},
 	OSDMaxObjectSize:        0,
@@ -136,8 +136,13 @@ func SetVarsik() {
 	qs, _ := data["main"]["queuesize"].(int)
 	Conf.queue = make(chan string, qs)
 	Conf.Radoconns = data["main"]["radoconns"].(int)
-	Conf.LogStdout = stringTObool("logfile", strings.ToLower(data["main"]["logfile"].(string)))
-	Conf.Logfile = data["main"]["logpath"].(string)
+
+	//Conf.LogStdout = stringTObool("logfile", strings.ToLower(data["main"]["logfile"].(string)))
+	//Conf.Logfile = data["main"]["logpath"].(string)
+
+	tools.Logging.LogToFile = stringTObool("logfile", strings.ToLower(data["main"]["logfile"].(string)))
+	tools.Logging.FilePath = data["main"]["logpath"].(string)
+
 	Conf.UsersFile = data["main"]["usersfile"].(string)
 	Conf.ServerUser = data["main"]["serveruser"].(string)
 	Conf.ServerPass = data["main"]["serverpass"].(string)
@@ -159,13 +164,13 @@ func SetVarsik() {
 
 	switch strings.ToLower(authtype) {
 	case "basic":
-		log.Println("[Using HTTP basic authentication]")
+		tools.WriteLogs("Using HTTP basic authentication")
 		Conf.AuthBasic = true
 	case "jwt":
-		log.Println("[Using JWT authentication]")
+		tools.WriteLogs("Using JWT authentication")
 		Conf.AuthJWT = true
 	case "apikey":
-		log.Println("[Using ApiKey authentication]")
+		tools.WriteLogs("Using ApiKey authentication")
 		Conf.AuthApi = true
 	}
 

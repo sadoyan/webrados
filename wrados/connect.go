@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"tools"
 )
 
 type radcon struct {
@@ -24,15 +25,15 @@ var Rconnect = &radcon{
 func (r *radcon) connect() {
 	conn, err := rados.NewConn()
 	if err != nil {
-		Writelog("Error when invoke a new connection:", err)
+		tools.WriteLogs("Error when invoke a new connection:", err)
 	}
 	err = conn.ReadDefaultConfigFile()
 	if err != nil {
-		Writelog("Error when read default config file:", err)
+		tools.WriteLogs("Error when read default config file:", err)
 	}
 	err = conn.Connect()
 	if err != nil {
-		Writelog("Error when connect: ", err)
+		tools.WriteLogs("Error when connect: ", err)
 	}
 	Rconnect.Connection = append(Rconnect.Connection, conn)
 }
@@ -40,15 +41,15 @@ func (r *radcon) connect() {
 //func radoConnect() {
 //	conn, err := rados.NewConn()
 //	if err != nil {
-//		Writelog("Error when invoke a new connection:", err)
+//		tools.WriteLogs("Error when invoke a new connection:", err)
 //	}
 //	err = conn.ReadDefaultConfigFile()
 //	if err != nil {
-//		Writelog("Error when read default config file:", err)
+//		tools.WriteLogs("Error when read default config file:", err)
 //	}
 //	err = conn.Connect()
 //	if err != nil {
-//		Writelog("Error when connect: ", err)
+//		tools.WriteLogs("Error when connect: ", err)
 //	}
 //	Rconnect.Connection = append(Rconnect.Connection, conn)
 //}
@@ -63,7 +64,7 @@ func LsPools() {
 				Rconnect.connect()
 				n = n + 1
 			}
-			Writelog("Created", strconv.Itoa(n), "connections to Ceph cluster")
+			tools.WriteLogs("Created", strconv.Itoa(n), "connections to Ceph cluster")
 		}
 
 		randindex := rand.Intn(len(Rconnect.Connection))
@@ -75,7 +76,7 @@ func LsPools() {
 			configs.Conf.OSDMaxObjectSize = s
 			configs.Conf.Uploadmaxpart = s
 			configs.Conf.Unlock()
-			Writelog("Setting max upload part to", s, "bytes")
+			tools.WriteLogs("Setting max upload part to", s, "bytes")
 		}
 		polos := map[string]bool{}
 		switch configs.Conf.AllPools {
@@ -102,7 +103,7 @@ func LsPools() {
 				lst = append(lst, t)
 			}
 			configs.Conf.Unlock()
-			Writelog("Syncing RADOS pools. New pool list is:", strings.Join(lst, ", "))
+			tools.WriteLogs("Syncing RADOS pools. New pool list is:", strings.Join(lst, ", "))
 		}
 		time.Sleep(20 * time.Second)
 	}

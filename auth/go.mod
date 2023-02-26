@@ -5,7 +5,7 @@ go 1.17
 require (
 	configs v0.0.1
 	github.com/golang-jwt/jwt v3.2.2+incompatible
-	wrados v0.0.1
+	tools v0.0.1
 )
 
 require (
@@ -14,6 +14,6 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace wrados => ../wrados
+replace tools => ../tools
 
 replace configs => ../configs

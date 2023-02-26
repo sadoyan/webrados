@@ -5,15 +5,15 @@ import (
 	"configs"
 	"encoding/json"
 	"fmt"
+	"github.com/ceph/go-ceph/rados"
 	"io/ioutil"
 	"math/rand"
 	"metadata"
 	"net/http"
 	"strconv"
 	"strings"
+	"tools"
 	"wrados"
-
-	"github.com/ceph/go-ceph/rados"
 )
 
 var minrange int
@@ -23,11 +23,11 @@ var of uint64
 func respCodewriter(f error, w http.ResponseWriter, r *http.Request) string {
 	if strings.Split(f.Error(), ",")[1] == " No such file or directory" {
 		w.WriteHeader(http.StatusNotFound)
-		wrados.Writelog(configs.GetIP(r), r.Method, f.Error(), r.URL.String())
+		tools.WriteLogs(tools.GetIP(r), r.Method, f.Error(), r.URL.String())
 		return http.StatusText(404) + ": " + r.URL.String() + "\n"
 	} else {
 		w.WriteHeader(http.StatusInternalServerError)
-		wrados.Writelog(configs.GetIP(r), r.Method, f.Error(), r.URL.String())
+		tools.WriteLogs(tools.GetIP(r), r.Method, f.Error(), r.URL.String())
 		return http.StatusText(500) + ": " + r.URL.String() + "\n"
 	}
 }
@@ -41,7 +41,7 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 	ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 
 	if e != nil {
-		wrados.Writelog("Error opening", e)
+		tools.WriteLogs("Error opening", e)
 		return false
 	}
 
@@ -57,14 +57,14 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 		bytesOut := make([]byte, mx)
 		_, err := ioctx.Read(name, bytesOut, of)
 		if err != nil {
-			wrados.Writelog("Error reading segment", name, err)
+			tools.WriteLogs("Error reading segment", name, err)
 			break
 		}
 		_, er := w.Write(bytesOut)
 
 		if er != nil {
 			if !strings.HasPrefix(er.Error(), "write tcp") {
-				wrados.Writelog("Broken pipe", er)
+				tools.WriteLogs("Broken pipe", er)
 			}
 			return false
 		}
@@ -76,7 +76,7 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 
 	}
 
-	wrados.Writelog(configs.GetIP(r), r.Method, xo.Size, "bytes", name, "from", pool)
+	tools.WriteLogs(tools.GetIP(r), r.Method, xo.Size, "bytes", name, "from", pool)
 	return true
 }
 
@@ -91,7 +91,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	extension := strings.Split(name, ".")[1]
 	_, ok := wrados.Rconnect.Poolnames[pool]
 	if !ok {
-		wrados.Writelog("Error connecting to pool", pool)
+		tools.WriteLogs("Error connecting to pool", pool)
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("500 Internal Server Error \n"))
 		return
@@ -100,7 +100,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	ioctx, e := wrados.Rconnect.Connection[randindex].OpenIOContext(pool)
 	defer ioctx.Destroy()
 	if e != nil {
-		wrados.Writelog(e)
+		tools.WriteLogs(e)
 	}
 	filename, eror := metadata.DBClient(pool+"/"+name, "get", "")
 	xo, lo := ioctx.Stat(name)
@@ -108,7 +108,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	if lo != nil {
 		errormsg := strings.Split(lo.Error(), ",")
 
-		wrados.Writelog(configs.GetIP(r), r.Method, r.URL, errormsg[len(errormsg)-1])
+		tools.WriteLogs(tools.GetIP(r), r.Method, r.URL, errormsg[len(errormsg)-1])
 		switch errormsg[len(errormsg)-1] {
 		case " No such file or directory":
 			w.WriteHeader(http.StatusNotFound)
@@ -249,7 +249,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				sizes = append(sizes, siz)
 				x, ez := ioctx.Stat(fileparts[filepart])
 				if ez != nil {
-					wrados.Writelog("Can't get file info", fileparts[filepart])
+					tools.WriteLogs("Can't get file info", fileparts[filepart])
 				}
 				actsz = append(actsz, int(x.Size))
 			}
@@ -315,14 +315,14 @@ func Get(w http.ResponseWriter, r *http.Request) {
 func Put(w http.ResponseWriter, r *http.Request) {
 	if configs.Conf.Readonly {
 		msg := "Server is running in read only mode !"
-		wrados.Writelog(configs.GetIP(r), msg)
+		tools.WriteLogs(tools.GetIP(r), msg)
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(msg + "\n"))
 		return
 	}
 	s := strings.Split(r.URL.Path, "/")
 	if len(s) < 3 {
-		wrados.Writelog(configs.GetIP(r), "Invalid pool name")
+		tools.WriteLogs(tools.GetIP(r), "Invalid pool name")
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("500: Invalid pool name \n"))
 		return
@@ -330,7 +330,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 	pool := s[1]
 	name := strings.Join(s[2:], "/")
 	if _, ok := wrados.Rconnect.Poolnames[pool]; !ok {
-		wrados.Writelog(configs.GetIP(r), "Pool not found")
+		tools.WriteLogs(tools.GetIP(r), "Pool not found")
 		w.WriteHeader(http.StatusNotFound)
 		_, _ = w.Write([]byte("404: Not Found \n"))
 		return
@@ -340,7 +340,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 	defer ioct.Destroy()
 	lenq, lqe := strconv.Atoi(r.Header.Get("Content-Length"))
 	if lqe != nil {
-		wrados.Writelog(configs.GetIP(r), "Invalid pool name")
+		tools.WriteLogs(tools.GetIP(r), "Invalid pool name")
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte("403: Content-Length header is mandatory\n"))
 		return
@@ -372,13 +372,13 @@ func Put(w http.ResponseWriter, r *http.Request) {
 				} else {
 					segment = name + "-0"
 					fileSegments = append(fileSegments, segment)
-					wrados.Writelog(configs.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
+					tools.WriteLogs(tools.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
 				}
 			}
 			_, eerr := reader.Read(buffer)
 			if eerr != nil {
 				_ = ioct.Append(segment, writebuffer)
-				wrados.Writelog(configs.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
+				tools.WriteLogs(tools.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
 				writebuffer = nil
 				break
 			}
@@ -388,7 +388,7 @@ func Put(w http.ResponseWriter, r *http.Request) {
 				segment = name + "-" + strconv.Itoa(totalbytes)
 				_ = ioct.Create(segment, rados.CreateOption(configs.Conf.Uploadmaxpart-ssiz1))
 				fileSegments = append(fileSegments, segment)
-				wrados.Writelog(configs.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
+				tools.WriteLogs(tools.GetIP(r), r.Method, bytecalc, "bytes, segment", segment, "of", r.URL, "to", pool, totalbytes)
 				bytecalc = 0
 			}
 			if len(writebuffer) == ssize {
@@ -404,15 +404,15 @@ func Put(w http.ResponseWriter, r *http.Request) {
 			fmeta := strings.Join(fileSegments, ",")
 			_, metaerr := metadata.DBClient(pool+"/"+name, "set", fmeta)
 			if metaerr != nil {
-				wrados.Writelog("error setting metadata:", metaerr)
+				tools.WriteLogs("error setting metadata:", metaerr)
 			}
 			_ = ioct.Append(name, []byte(fmeta))
 		}
 
-		wrados.Writelog("Created File", name, "In", pool)
+		tools.WriteLogs("Created File", name, "In", pool)
 		//log.Printf("Execution time %s\n", time.Since(start))
 	}
-	wrados.Writelog(configs.GetIP(r), r.Method, r.Header.Get("Content-Length"), "bytes", r.URL, "to", pool)
+	tools.WriteLogs(tools.GetIP(r), r.Method, r.Header.Get("Content-Length"), "bytes", r.URL, "to", pool)
 }
 
 func Del(w http.ResponseWriter, r *http.Request) {
@@ -422,13 +422,13 @@ func Del(w http.ResponseWriter, r *http.Request) {
 		if purgecache {
 			_ = metadata.Cache.Reset()
 			_ = metadata.Cache.ResetStats()
-			wrados.Writelog(configs.GetIP(r), r.Method, "Purging everything from cache")
+			tools.WriteLogs(tools.GetIP(r), r.Method, "Purging everything from cache")
 			return
 		}
 		_, cachestats := r.URL.Query()["cachestats"]
 		if cachestats {
 			_ = metadata.Cache.ResetStats()
-			wrados.Writelog(configs.GetIP(r), r.Method, "Resetting cache statistics")
+			tools.WriteLogs(tools.GetIP(r), r.Method, "Resetting cache statistics")
 			return
 		}
 
@@ -441,7 +441,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 			_, delcache := r.URL.Query()["cache"]
 			if delcache {
 				_, _ = metadata.DBClient(pool+"/"+name, "del", "")
-				wrados.Writelog(configs.GetIP(r), r.Method, "removing", pool+"/"+name, "from cache")
+				tools.WriteLogs(tools.GetIP(r), r.Method, "removing", pool+"/"+name, "from cache")
 				return
 			}
 			ss, eror := metadata.DBClient(pool+"/"+name, "get", "")
@@ -468,7 +468,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 					if f != nil {
 						_, _ = fmt.Fprintf(w, respCodewriter(f, w, r))
 					} else {
-						wrados.Writelog(configs.GetIP(r), r.Method, filez[filename], "from", pool)
+						tools.WriteLogs(tools.GetIP(r), r.Method, filez[filename], "from", pool)
 						msg := http.StatusText(200) + ", Deleted: " + r.URL.String() + "\n"
 						_, _ = w.Write([]byte(msg))
 					}
@@ -480,7 +480,7 @@ func Del(w http.ResponseWriter, r *http.Request) {
 	default:
 		w.WriteHeader(http.StatusForbidden)
 		msg := "Dangerous commands are disabled ! \n"
-		wrados.Writelog(configs.GetIP(r), msg)
+		tools.WriteLogs(tools.GetIP(r), msg)
 		_, _ = w.Write([]byte(msg))
 	}
 }

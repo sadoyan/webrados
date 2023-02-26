@@ -3,6 +3,7 @@ package main
 import (
 	"auth"
 	"configs"
+	"tools"
 	"web"
 	"wrados"
 )
@@ -12,6 +13,6 @@ func main() {
 	web.HttpMimes.Populate()
 	go auth.PopulateUsers()
 	go wrados.LsPools()
-	go wrados.LogToFile()
+	go tools.LogToFile()
 	web.RunServer()
 }

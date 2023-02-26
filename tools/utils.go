@@ -1,4 +1,4 @@
-package configs
+package tools
 
 import (
 	"net/http"

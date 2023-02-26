@@ -8,14 +8,13 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+	"github.com/golang-jwt/jwt"
 	"net/http"
 	"os"
 	"strings"
 	"sync"
 	"time"
-	"wrados"
-
-	"github.com/golang-jwt/jwt"
+	"tools"
 )
 
 type AuthPool struct {
@@ -35,7 +34,7 @@ func PopulateUsers() {
 		c, e := os.Open(configs.Conf.UsersFile)
 		content := bufio.NewScanner(c)
 		if e != nil {
-			wrados.Writelog(e)
+			tools.WriteLogs(e)
 		}
 
 		for content.Scan() {
@@ -43,14 +42,14 @@ func PopulateUsers() {
 				z := strings.Split(content.Text(), " ")
 				if len(z) == 2 {
 					if _, ok := Auth.Basic[z[0]]; !ok {
-						// wrados.Writelog("Found new user: " + z[0] + ", enabling!")
+						// tools.WriteLogs("Found new user: " + z[0] + ", enabling!")
 						Auth.Lock()
 						Auth.Basic[z[0]] = z[1]
 						Auth.Unlock()
 					}
 				} else if len(z) == 1 {
 					if _, ok := Auth.Api[z[0]]; !ok {
-						// wrados.Writelog("Found new apikey: " + z[0] + ", enabling!")
+						// tools.WriteLogs("Found new apikey: " + z[0] + ", enabling!")
 						Auth.Lock()
 						Auth.Api[z[0]] = true
 						Auth.Unlock()
@@ -87,7 +86,7 @@ func GenJWTtoken(in []byte) ([]byte, error) {
 	var jwtin jwtinput
 	err := json.Unmarshal(in, &jwtin)
 	if err != nil {
-		wrados.Writelog(err)
+		tools.WriteLogs(err)
 		return nil, err
 	}
 
@@ -103,7 +102,7 @@ func GenJWTtoken(in []byte) ([]byte, error) {
 
 	tokenString, err2 := token.SignedString(hmacSampleSecret)
 	if err != nil {
-		wrados.Writelog("Error Getting JWT signed key:", err2)
+		tools.WriteLogs("Error Getting JWT signed key:", err2)
 		return nil, err2
 	}
 	return []byte(tokenString), nil
@@ -120,7 +119,7 @@ func CheckJWTtoken(tok string, r *http.Request) bool {
 		return hmacSampleSecret, nil
 	})
 	if errr != nil {
-		wrados.Writelog(configs.GetIP(r), r.Method, "JWT", errr, r.URL)
+		tools.WriteLogs(tools.GetIP(r), r.Method, "JWT", errr, r.URL)
 		return false
 
 	} else {
@@ -137,7 +136,7 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) bool {
 		if _, ok := Auth.Api[r.Header.Get("X-API-KEY")]; ok {
 			return true
 		} else {
-			wrados.Writelog(configs.GetIP(r), r.Method, "Invalid APIKEY", r.URL)
+			tools.WriteLogs(tools.GetIP(r), r.Method, "Invalid APIKEY", r.URL)
 			http.Error(w, http.StatusText(unauth), unauth)
 			return false
 		}
@@ -153,13 +152,13 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) bool {
 		username, password, ok := r.BasicAuth()
 		if !ok {
 			http.Error(w, http.StatusText(unauth), unauth)
-			wrados.Writelog(configs.GetIP(r), r.Method, "401 Unauthorized: No basic auth present", r.URL)
+			tools.WriteLogs(tools.GetIP(r), r.Method, "401 Unauthorized: No basic auth present", r.URL)
 			return false
 		}
 
 		if !isBAauthorised(username, password) {
 			http.Error(w, http.StatusText(unauth), unauth)
-			wrados.Writelog(configs.GetIP(r), r.Method, "401 Unauthorized: Invalid Credentials", r.URL)
+			tools.WriteLogs(tools.GetIP(r), r.Method, "401 Unauthorized: Invalid Credentials", r.URL)
 			return false
 		}
 		w.WriteHeader(http.StatusOK)

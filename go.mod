@@ -7,6 +7,7 @@ require (
 	configs v0.0.1
 	web v0.0.1
 	wrados v0.0.1
+	tools v0.0.1
 )
 
 require (
@@ -27,3 +28,5 @@ replace metadata => ./metadata
 replace web => ./web
 
 replace wrados => ./wrados
+
+replace tools => ./tools

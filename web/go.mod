@@ -8,9 +8,12 @@ require (
 	metadata v0.0.1
 	wrados v0.0.1
 	auth v0.0.1
+	tools v0.0.1
 )
 
 replace metadata => ../metadata
 replace auth => ../auth
 replace wrados => ../wrados
 replace configs => ../configs
+replace tools => ../tools
+

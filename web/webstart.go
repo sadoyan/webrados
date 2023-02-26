@@ -7,7 +7,7 @@ import (
 	"net/http"
 	"runtime"
 	"time"
-	"wrados"
+	"tools"
 )
 
 func dynHandler(w http.ResponseWriter, r *http.Request) {
@@ -25,7 +25,7 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 	case "POST", "PUT":
 		_, ko := r.Header["Content-Length"]
 		if !ko {
-			wrados.Writelog("Header \"Content-Length\" is not present in request, aborting")
+			tools.WriteLogs("Header \"Content-Length\" is not present in request, aborting")
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = w.Write([]byte("400: Header \"Content-Length\" is not present in request, aborting \n"))
 			return
@@ -84,7 +84,7 @@ func playmux1() {
 		ReadTimeout:  100 * time.Second,
 		WriteTimeout: 100 * time.Second,
 	}
-	wrados.Writelog("Starting monitoring instance at:", configs.Conf.MonAddress)
+	tools.WriteLogs("Starting monitoring instance at:", configs.Conf.MonAddress)
 	_ = s2.ListenAndServe()
 
 }
@@ -93,7 +93,7 @@ func RunServer() {
 	if configs.Conf.Monenabled {
 		go playmux1()
 	}
-	wrados.Writelog("Starting WebRados server at:", configs.Conf.HttpAddress)
+	tools.WriteLogs("Starting WebRados server at:", configs.Conf.HttpAddress)
 	runtime.Gosched()
 	playmux0()
 }
