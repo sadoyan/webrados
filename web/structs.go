@@ -141,3 +141,21 @@ func PrintMemUsage() {
 	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
 	fmt.Printf("\tNumGC = %v\n", m.NumGC)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
+
+type Headers interface {
+	Hdr(map[string][]string)
+}
+
+type headers struct {
+	Headers map[string][]string
+}
+
+var Header = &headers{Headers: map[string][]string{}}
+
+func (r *headers) Hdr(hodor map[string][]string) {
+	r.Headers = hodor
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //

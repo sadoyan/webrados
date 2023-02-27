@@ -68,20 +68,16 @@ func readFile(w http.ResponseWriter, r *http.Request, name string, pool string, 
 			}
 			return false
 		}
-
 		of = of + mx
 		if of >= xo.Size {
 			break
 		}
-
 	}
-
 	tools.WriteLogs(tools.GetIP(r), r.Method, xo.Size, "bytes", name, "from", pool)
 	return true
 }
 
 func Get(w http.ResponseWriter, r *http.Request) {
-	//start := time.Now()
 	s := strings.Split(r.URL.Path, "/")
 	pool := s[1]
 	if pool == "favicon.ico" {
@@ -152,14 +148,18 @@ func Get(w http.ResponseWriter, r *http.Request) {
 	}
 
 	mime, mok := HttpMimes.Lookup(extension)
+	w.Header().Set("Last-Modified", xo.ModTime.String())
 	switch mok {
 	case false:
 		if len(filename) > 0 {
+
 			var fileparts []string
 			fileparts = strings.Split(filename, ",")
 			lenq := fileparts[len(fileparts)-1]
 			ff := fileparts[:len(fileparts)-1]
-			fmt.Println(lenq, len(filename))
+
+			w.Header().Set("Content-Length", lenq)
+
 			for fp := range ff {
 				name = fileparts[fp]
 				xo, _ = ioctx.Stat(name)
@@ -167,19 +167,23 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			}
 
 		} else {
+			xo, _ = ioctx.Stat(name)
+			w.Header().Set("Content-Length", strconv.FormatUint(xo.Size, 10))
 			readFile(w, r, name, pool, xo, of)
 		}
-
 	case true:
 		var fsize uint64
 		var fileparts []string
-		//xo, _ = ioctx.Stat(name)
 
 		xoSizeInt := int(xo.Size)
 		xoSizeStr := strconv.Itoa(xoSizeInt)
 
+		w.Header().Set("Content-Length", strconv.Itoa(contentlenght))
+		w.Header().Set("Accept-Ranges", "bytes")
+		w.Header().Set("Last-Modified", xo.ModTime.String())
+		w.Header().Set("Content-Type", mime)
+
 		if len(filename) == 0 {
-			//if xo.Size > 0 {
 			_, ko := r.Header["Range"]
 			switch ko {
 			case true:
@@ -195,10 +199,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				contentlenght = xoSizeInt - minrange
 				of = uint64(minrange)
 
-				w.Header().Set("Content-Length", strconv.Itoa(contentlenght))
-				w.Header().Set("Accept-Ranges", "bytes")
-				w.Header().Set("Last-Modified", xo.ModTime.String())
-				w.Header().Set("Content-Type", mime)
 				w.Header().Set("Content-Range", "bytes "+strconv.Itoa(minrange)+"-"+strconv.Itoa(xoSizeInt-1)+"/"+xoSizeStr)
 				w.WriteHeader(http.StatusPartialContent)
 
@@ -220,18 +220,9 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			fsize = fsize + xo.Size
 		}
 
-		//fmt.Println("============== Req ==============")
-		//for nnn, values := range r.Header {
-		//	for _, value := range values {
-		//		fmt.Println(nnn, value)
-		//	}
-		//}
-		//fmt.Println("=================================")
-
 		_, ko := r.Header["Range"]
 		switch ko {
 		case true:
-
 			ranges := strings.FieldsFunc(r.Header.Get("Range"), Split)
 			if len(ranges) >= 2 {
 				minrange, _ = strconv.Atoi(ranges[1])
@@ -258,7 +249,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				if minrange < sizes[fp] {
 					for xd := range fileparts[:fp-1] { // Calculate prior file sizes
 						before = actsz[xd] + before
-						//fmt.Println(before)
 					}
 					fileparts = fileparts[fp-1:]
 					sizes = sizes[fp-1:]
@@ -266,10 +256,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			w.Header().Set("Content-Length", strconv.Itoa(contentlenght))
-			w.Header().Set("Accept-Ranges", "bytes")
-			w.Header().Set("Last-Modified", xo.ModTime.String())
-			w.Header().Set("Content-Type", mime)
 			w.Header().Set("Content-Range", "bytes "+strconv.Itoa(minrange)+"-"+strconv.FormatUint(fsize-1, 10)+"/"+strconv.FormatUint(fsize, 10))
 			w.WriteHeader(http.StatusPartialContent)
 
@@ -294,7 +280,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				}
 
 			}
-
 		case false:
 			w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
 			for filepart := range fileparts {
@@ -307,9 +292,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-	//fmt.Println("=======================", len(wrados.Rconnect.Connection), "=======================")
-	//elapsed := time.Since(start)
-	//fmt.Println("Took :", elapsed)
 }
 
 func Put(w http.ResponseWriter, r *http.Request) {
