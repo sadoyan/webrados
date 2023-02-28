@@ -22,7 +22,7 @@ var HttpMimes = &mimetypes{
 	Audios: map[string]string{},
 }
 
-func (r *mimetypes) Populate() {
+func (*mimetypes) Populate() {
 	HttpMimes.Videos["1d-interleaved-parityfec"] = "video/1d-interleaved-parityfec"
 	HttpMimes.Videos["3gpp"] = "video/3gpp"
 	HttpMimes.Videos["3gpp2"] = "video/3gpp2"
@@ -121,7 +121,7 @@ func (r *mimetypes) Populate() {
 
 }
 
-func (r *mimetypes) Lookup(mt string) (string, bool) {
+func (*mimetypes) Lookup(mt string) (string, bool) {
 	mvi, vok := HttpMimes.Videos[mt]
 	if vok {
 		return mvi, true
@@ -141,21 +141,3 @@ func PrintMemUsage() {
 	fmt.Printf("\tSys = %v MiB", bToMb(m.Sys))
 	fmt.Printf("\tNumGC = %v\n", m.NumGC)
 }
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
-
-type Headers interface {
-	Hdr(map[string][]string)
-}
-
-type headers struct {
-	Headers map[string][]string
-}
-
-var Header = &headers{Headers: map[string][]string{}}
-
-func (r *headers) Hdr(hodor map[string][]string) {
-	r.Headers = hodor
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - //
