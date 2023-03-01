@@ -14,9 +14,13 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "GET":
 		if configs.Conf.AuthRead {
-			if auth.CheckAuth(w, r) {
+			if auth.DoAuth(r) {
 				momo.incrementGet()
 				Get(w, r)
+			} else {
+				momo.incrementGet()
+				http.Error(w, http.StatusText(401), 401)
+				tools.WriteLogs(tools.GetIP(r), r.Method, "401 Unauthorized", r.URL)
 			}
 		} else {
 			momo.incrementGet()
@@ -31,9 +35,13 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if configs.Conf.AuthWrite {
-			if auth.CheckAuth(w, r) {
+			if auth.DoAuth(r) {
 				momo.incrementPost()
 				Put(w, r)
+			} else {
+				momo.incrementGet()
+				http.Error(w, http.StatusText(401), 401)
+				tools.WriteLogs(tools.GetIP(r), r.Method, "401 Unauthorized", r.URL)
 			}
 		} else {
 			momo.incrementPost()
@@ -41,10 +49,15 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case "DELETE":
 		if configs.Conf.AuthWrite {
-			if auth.CheckAuth(w, r) {
+			if auth.DoAuth(r) {
 				momo.incrementDel()
 				Del(w, r)
+			} else {
+				momo.incrementDel()
+				http.Error(w, http.StatusText(401), 401)
+				tools.WriteLogs(tools.GetIP(r), r.Method, "401 Unauthorized", r.URL)
 			}
+
 		} else {
 			momo.incrementDel()
 			Del(w, r)

@@ -1,5 +1,6 @@
 package auth
 
+/*
 import (
 	"bufio"
 	"configs"
@@ -167,3 +168,5 @@ func CheckAuth(w http.ResponseWriter, r *http.Request) bool {
 		return false
 	}
 }
+
+*/
