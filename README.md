@@ -139,6 +139,16 @@ If you are using JWT Authenticatio, you should set the value of yout JWT Setcret
 export JWTSECRET='Super$ecter123765@'
 ```
 
+You can pass JWT token as header `Authorization` . 
+
+```
+curl --header "Authorization: Bearer $TOKEN" http://127.0.0.1:8080/bublics/nice.jpeg
+```
+Or as URL parameter. 
+```
+curl http://127.0.0.1:8080/bublics/nice.jpeg?token=$TOKEN
+```
+
 ### **Large files**
 
 In order to be able to store large file in RADOS directly files needs to be split to smaller chunks.

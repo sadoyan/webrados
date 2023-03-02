@@ -56,7 +56,6 @@ func (ba *basic) auth() bool {
 	}
 	return md5HashInString == pass
 }
-
 func (ap *api) auth() bool {
 	if _, ok := Credential.Keys[ap.Key]; ok {
 		return true
@@ -64,7 +63,6 @@ func (ap *api) auth() bool {
 		return false
 	}
 }
-
 func (tk *token) auth() bool {
 	tok := tk.token
 	hmacSampleSecret := configs.Conf.JWTSecret
@@ -77,7 +75,6 @@ func (tk *token) auth() bool {
 		return hmacSampleSecret, nil
 	})
 	if errr != nil {
-		//tools.WriteLogs(tools.GetIP(r), r.Method, "JWT", errr, r.URL)
 		return false
 
 	} else {
@@ -86,8 +83,27 @@ func (tk *token) auth() bool {
 
 }
 
-func authenticate(a auth) bool {
-	return a.auth()
+func DoAuth(r *http.Request) bool {
+	switch {
+	case configs.Conf.AuthApi:
+		a := api{Key: r.Header.Get("X-API-KEY")}
+		return a.auth()
+	case configs.Conf.AuthBasic:
+		username, password, ok := r.BasicAuth()
+		if !ok {
+			return false
+		}
+		b := basic{User: username, Pass: password, Auth: ok}
+		return b.auth()
+	case configs.Conf.AuthJWT:
+		jwthdr, ok := r.URL.Query()["token"]
+		if !ok {
+			jwthdr = strings.Split(r.Header.Get("Authorization"), " ")
+		}
+		c := token{token: jwthdr[len(jwthdr)-1]}
+		return c.auth()
+	}
+	return false
 }
 
 func AddUsers() {
@@ -125,26 +141,30 @@ func AddUsers() {
 
 }
 
-func DoAuth(r *http.Request) bool {
-	switch {
-	case configs.Conf.AuthApi:
-		a := api{Key: r.Header.Get("X-API-KEY")}
-		if authenticate(&a) {
-			return true
-		} else {
-			return false
-		}
-	case configs.Conf.AuthBasic:
-		username, password, ok := r.BasicAuth()
-		if !ok {
-			return false
-		}
-		b := basic{User: username, Pass: password, Auth: ok}
-		return authenticate(&b)
-	case configs.Conf.AuthJWT:
-		jwthdr := strings.Split(r.Header.Get("Authorization"), " ")
-		c := token{token: jwthdr[len(jwthdr)-1]}
-		return authenticate(&c)
-	}
-	return false
+/*
+type jwtinput struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
+
+func GenJWTtoken(in []byte) ([]byte, error) {
+	var jwtin jwtinput
+	err := json.Unmarshal(in, &jwtin)
+	if err != nil {
+		tools.WriteLogs(err)
+		return nil, err
+	}
+	hmacSampleSecret := configs.Conf.JWTSecret
+	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(jwtin.Username+jwtin.Password)))
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"hash": hash,
+	})
+
+	tokenString, err2 := token.SignedString(hmacSampleSecret)
+	if err != nil {
+		tools.WriteLogs("Error Getting JWT signed key:", err2)
+		return nil, err2
+	}
+	return []byte(tokenString), nil
+}
+*/
