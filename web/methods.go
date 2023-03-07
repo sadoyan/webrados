@@ -159,7 +159,6 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			ff := fileparts[:len(fileparts)-1]
 
 			w.Header().Set("Content-Length", lenq)
-
 			for fp := range ff {
 				name = fileparts[fp]
 				xo, _ = ioctx.Stat(name)
@@ -214,9 +213,8 @@ func Get(w http.ResponseWriter, r *http.Request) {
 
 		fileparts = strings.Split(filename, ",")
 		fileparts = fileparts[:len(fileparts)-1]
-		for filepart := range fileparts {
-			name = fileparts[filepart]
-			xo, _ = ioctx.Stat(name)
+		for _, filepart := range fileparts {
+			xo, _ = ioctx.Stat(filepart)
 			fsize = fsize + xo.Size
 		}
 
@@ -235,12 +233,12 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			actsz := []int{}
 			before := 0
 
-			for filepart := range fileparts {
-				siz, _ := strconv.Atoi(strings.Split(fileparts[filepart], "-")[1])
+			for _, filepart := range fileparts {
+				siz, _ := strconv.Atoi(strings.Split(filepart, "-")[1])
 				sizes = append(sizes, siz)
-				x, ez := ioctx.Stat(fileparts[filepart])
+				x, ez := ioctx.Stat(filepart)
 				if ez != nil {
-					tools.WriteLogs("Can't get file info", fileparts[filepart])
+					tools.WriteLogs("Can't get file info", filepart)
 				}
 				actsz = append(actsz, int(x.Size))
 			}
@@ -264,16 +262,15 @@ func Get(w http.ResponseWriter, r *http.Request) {
 				of = xo.Size - uint64(contentlenght)
 				_ = readFile(w, r, name, pool, xo, of)
 			} else {
-				for filepart := range fileparts {
-					name = fileparts[filepart]
-					xo, _ = ioctx.Stat(name)
-					if filepart == 0 {
+				for f, filepart := range fileparts {
+					xo, _ = ioctx.Stat(filepart)
+					if f == 0 {
 						of = uint64(minrange - before)
 
 					} else {
 						of = 0
 					}
-					x := readFile(w, r, name, pool, xo, of)
+					x := readFile(w, r, filepart, pool, xo, of)
 					if x == false {
 						break
 					}
@@ -282,10 +279,9 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			}
 		case false:
 			w.Header().Set("Content-Length", strconv.FormatUint(fsize, 10))
-			for filepart := range fileparts {
-				name = fileparts[filepart]
-				xo, _ = ioctx.Stat(name)
-				x := readFile(w, r, name, pool, xo, 0)
+			for _, filepart := range fileparts {
+				xo, _ = ioctx.Stat(filepart)
+				x := readFile(w, r, filepart, pool, xo, 0)
 				if x == false {
 					break
 				}
@@ -439,18 +435,18 @@ func Del(w http.ResponseWriter, r *http.Request) {
 
 					fileparts := strings.Split(ss, ",")
 					fileparts = fileparts[:len(fileparts)-1]
-					for filepart := range fileparts {
-						filez = append(filez, fileparts[filepart])
+					for _, filepart := range fileparts {
+						filez = append(filez, filepart)
 					}
 
 				}
 
-				for filename := range filez {
-					f := ioct.Delete(filez[filename])
+				for _, filename := range filez {
+					f := ioct.Delete(filename)
 					if f != nil {
 						_, _ = fmt.Fprintf(w, respCodewriter(f, w, r))
 					} else {
-						tools.WriteLogs(tools.GetIP(r), r.Method, filez[filename], "from", pool)
+						tools.WriteLogs(tools.GetIP(r), r.Method, filename, "from", pool)
 						msg := http.StatusText(200) + ", Deleted: " + r.URL.String() + "\n"
 						_, _ = w.Write([]byte(msg))
 					}
