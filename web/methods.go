@@ -212,16 +212,19 @@ func Get(w http.ResponseWriter, r *http.Request) {
 		}
 
 		fileparts = strings.Split(filename, ",")
+		fsize, _ = strconv.ParseUint(fileparts[len(fileparts)-1], 10, 64)
 		fileparts = fileparts[:len(fileparts)-1]
-		for _, filepart := range fileparts {
-			xo, _ = ioctx.Stat(filepart)
-			fsize = fsize + xo.Size
-		}
+
+		//for _, filepart := range fileparts {
+		//	xo, _ = ioctx.Stat(filepart)
+		//	fsize = fsize + xo.Size
+		//}
 
 		_, ko := r.Header["Range"]
 		switch ko {
 		case true:
 			ranges := strings.FieldsFunc(r.Header.Get("Range"), Split)
+
 			if len(ranges) >= 2 {
 				minrange, _ = strconv.Atoi(ranges[1])
 				contentlenght = int(fsize) - minrange
@@ -258,15 +261,15 @@ func Get(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusPartialContent)
 
 			if minrange >= sizes[len(sizes)-1] {
-				xo, _ = ioctx.Stat(name)
+				filepart := fileparts[len(fileparts)-1]
+				xo, _ = ioctx.Stat(filepart)
 				of = xo.Size - uint64(contentlenght)
-				_ = readFile(w, r, name, pool, xo, of)
+				_ = readFile(w, r, filepart, pool, xo, of)
 			} else {
 				for f, filepart := range fileparts {
 					xo, _ = ioctx.Stat(filepart)
 					if f == 0 {
 						of = uint64(minrange - before)
-
 					} else {
 						of = 0
 					}
