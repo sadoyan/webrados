@@ -5,9 +5,9 @@ go 1.17
 require (
 	auth v0.0.1
 	configs v0.0.1
+	tools v0.0.1
 	web v0.0.1
 	wrados v0.0.1
-	tools v0.0.1
 )
 
 require (

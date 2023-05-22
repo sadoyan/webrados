@@ -145,6 +145,7 @@ func AddUsers() {
 type jwtinput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
+	Expire   string `json:"expr"`
 }
 
 func GenJWTtoken(in []byte) ([]byte, error) {
