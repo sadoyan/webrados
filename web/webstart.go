@@ -4,6 +4,7 @@ import (
 	"auth"
 	"configs"
 	"fmt"
+	"io"
 	"net/http"
 	"runtime"
 	"time"
@@ -27,6 +28,25 @@ func dynHandler(w http.ResponseWriter, r *http.Request) {
 			Get(w, r)
 		}
 	case "POST", "PUT":
+		_, getjwt := r.URL.Query()["genjwt"]
+		if getjwt {
+			// curl -XPOST -H "X-API-KEY: $B" -d '{"username": "valog","password": "guggush","exp": 1685110930}'  http://192.168.111.2:8080/?genjwt
+			if auth.DoAdminAuth(r) {
+				momo.incrementGet()
+				k, _ := io.ReadAll(r.Body)
+				tok, _ := auth.GenJWTtoken(k)
+				_, _ = w.Write(tok)
+				_, _ = w.Write([]byte("\n"))
+				tools.WriteLogs("Sucesfully generated JWT token:", tools.GetIP(r), r.URL)
+				return
+			} else {
+				momo.incrementGet()
+				http.Error(w, http.StatusText(401), 401)
+				tools.WriteLogs(tools.GetIP(r), r.Method, "401 Unauthorized", r.URL)
+				return
+			}
+		}
+
 		_, ko := r.Header["Content-Length"]
 		if !ko {
 			tools.WriteLogs("Header \"Content-Length\" is not present in request, aborting")

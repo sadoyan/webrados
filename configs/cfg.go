@@ -24,19 +24,20 @@ type CfgType struct {
 	UsersFile        string
 	AuthRead         bool
 	AuthWrite        bool
-	ServerUser       string
-	ServerPass       string
-	ClientAuth       bool
-	ClientUser       string
-	ClientPass       string
-	InternalQueue    bool
-	queue            chan string
-	Uploadmaxpart    int
-	Radoconns        int
-	DangeZone        bool
-	Readonly         bool
-	Monuser          string
-	Monpass          string
+	//ServerUser       string
+	//ServerPass       string
+	AdminApiKey   string
+	ClientAuth    bool
+	ClientUser    string
+	ClientPass    string
+	InternalQueue bool
+	queue         chan string
+	Uploadmaxpart int
+	Radoconns     int
+	DangeZone     bool
+	Readonly      bool
+	Monuser       string
+	Monpass       string
 	//Logfile                 string
 	//LogStdout               bool
 	AllPools                bool
@@ -62,19 +63,20 @@ var Conf = &CfgType{
 	AuthRead:         false,
 	AuthWrite:        false,
 	UsersFile:        "",
-	ServerUser:       "",
-	ServerPass:       "",
-	ClientAuth:       false,
-	ClientUser:       "",
-	ClientPass:       "",
-	InternalQueue:    false,
-	Monenabled:       false,
-	Monuser:          "",
-	Monpass:          "",
-	Uploadmaxpart:    0,
-	Radoconns:        0,
-	DangeZone:        false,
-	Readonly:         false,
+	//ServerUser:       "",
+	//ServerPass:       "",
+	AdminApiKey:   "",
+	ClientAuth:    false,
+	ClientUser:    "",
+	ClientPass:    "",
+	InternalQueue: false,
+	Monenabled:    false,
+	Monuser:       "",
+	Monpass:       "",
+	Uploadmaxpart: 0,
+	Radoconns:     0,
+	DangeZone:     false,
+	Readonly:      false,
 	//LogStdout:               true,
 	//Logfile:                 "",
 	AllPools:                true,
@@ -144,15 +146,13 @@ func SetVarsik() {
 	tools.Logging.FilePath = data["main"]["logpath"].(string)
 
 	Conf.UsersFile = data["main"]["usersfile"].(string)
-	Conf.ServerUser = data["main"]["serveruser"].(string)
-	Conf.ServerPass = data["main"]["serverpass"].(string)
-
+	Conf.AdminApiKey = data["main"]["adminapikey"].(string)
 	Conf.Monenabled = stringTObool("monenabled", strings.ToLower(data["monitoring"]["enabled"].(string)))
 	Conf.MonAddress = data["monitoring"]["url"].(string)
 	Conf.Monuser = data["monitoring"]["user"].(string)
 	Conf.Monpass = data["monitoring"]["pass"].(string)
 
-	authorized["main"] = Conf.ServerUser + ":" + Conf.ServerPass
+	//authorized["main"] = Conf.ServerUser + ":" + Conf.ServerPass
 	authorized["mon"] = Conf.Monuser + ":" + Conf.Monpass
 
 	Conf.AuthWrite = stringTObool("authwrite", strings.ToLower(data["main"]["authwrite"].(string)))

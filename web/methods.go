@@ -294,6 +294,7 @@ func Get(w http.ResponseWriter, r *http.Request) {
 }
 
 func Put(w http.ResponseWriter, r *http.Request) {
+
 	if configs.Conf.Readonly {
 		msg := "Server is running in read only mode !"
 		tools.WriteLogs(tools.GetIP(r), msg)

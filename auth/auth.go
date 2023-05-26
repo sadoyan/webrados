@@ -4,7 +4,9 @@ import (
 	"bufio"
 	"configs"
 	"crypto/md5"
+	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt"
 	"net/http"
@@ -30,6 +32,9 @@ type token struct {
 type api struct {
 	Key string
 }
+type adminapi struct {
+	adminkey string
+}
 
 type credential struct {
 	Keys  map[string]bool
@@ -45,6 +50,13 @@ var Credential = &credential{
 	RWMutex: sync.RWMutex{},
 }
 
+func (ad *adminapi) auth() bool {
+	if ad.adminkey == configs.Conf.AdminApiKey {
+		return true
+	} else {
+		return false
+	}
+}
 func (ba *basic) auth() bool {
 
 	md5HashInBytes := md5.Sum([]byte(ba.Pass))
@@ -81,6 +93,11 @@ func (tk *token) auth() bool {
 		return true
 	}
 
+}
+
+func DoAdminAuth(r *http.Request) bool {
+	a := adminapi{adminkey: r.Header.Get("X-API-KEY")}
+	return a.auth()
 }
 
 func DoAuth(r *http.Request) bool {
@@ -141,11 +158,10 @@ func AddUsers() {
 
 }
 
-/*
 type jwtinput struct {
 	Username string `json:"username"`
 	Password string `json:"password"`
-	Expire   string `json:"expr"`
+	Expire   int    `json:"exp"`
 }
 
 func GenJWTtoken(in []byte) ([]byte, error) {
@@ -159,6 +175,7 @@ func GenJWTtoken(in []byte) ([]byte, error) {
 	hash := fmt.Sprintf("%x", sha256.Sum256([]byte(jwtin.Username+jwtin.Password)))
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"hash": hash,
+		"exp":  jwtin.Expire,
 	})
 
 	tokenString, err2 := token.SignedString(hmacSampleSecret)
@@ -168,4 +185,3 @@ func GenJWTtoken(in []byte) ([]byte, error) {
 	}
 	return []byte(tokenString), nil
 }
-*/

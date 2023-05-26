@@ -1,11 +1,10 @@
 main:
   listen : 0.0.0.0:8080
   dispatchers : 20
-  serveruser : admin
-  serverpass : 261a5983599fd57a016122ec85599ec4
+  adminapikey : eyJleHAiOjAsImhhc2giOiI4ZWZjMGM0N2NlZGM5OWU1Y2EwM2QxNjIyMGU4ZGRkZDY2MjQ3NjI4ZTkyZTUwNThjMzc1MTY5Nzc2ODkzOTc4In0Q05m2RZV2JRQiW1Ho1yKm2iqqD4SS2qFibUAJcHKJ8Q
   dangerzone : yes
   readonly : no
-  authread : no
+  authread : yes
   authwrite : yes
   radoconns : 25
   logfile : no
@@ -16,7 +15,7 @@ main:
     - donuts
     - images
   usersfile: users.txt
-  authtype: apikey # apikey , basic, jwt, none
+  authtype: jwt # apikey , basic, jwt, none
 cache:
   shards: 1024
   lifewindow: 10
