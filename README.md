@@ -211,10 +211,3 @@ Example response :
 }
 
 ```
-
-```curl -XDELETE  http://ceph1:8080/?cache```
-
-**HTTP DELETE** http://{BINDADDRESS}/?cachestats
-Purges metadata cache statistics without removing entries.
-
-```curl -XDELETE  http://ceph1:8080/?cachestats```
