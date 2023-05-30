@@ -177,8 +177,38 @@ Removes entry of given file from metadata cache
 
 ```curl -XDELETE  http://ceph1:8080/bublics/katana.mp4?cache```
 
-**HTTP DELETE** http://{BINDADDRESS}/?cache
-Purges the metadata cache and statistics.
+**Admin Endpoint**
+
+http://{BINDADDRESS}/.admin is special endpoinnt for performing some administration tasks. 
+This endpoint is always secured with special API-KEY solely for admin tasks. `config.yml[main][adminapikey]`. 
+Key in existing config is just an example, please change it to a long string
+
+Admin command are working on http POST, PUT, GET methods. Here are examples. 
+
+`curl -H "X-API-KEY: $B" 'http://ceph:8080/.admin?purgecachestats'` : Purge Statistics for local cache  
+`curl -H "X-API-KEY: $B" 'http://ceph:8080/.admin?purgecache'` : Empty local cache
+`curl -H "X-API-KEY: $B" -d '{"url": "http://ceph1:8080","exp": 1685365532}'  'http://ceph1:8080/.admin?genjwt'` : Returns JWT token which expires at `exp` 
+`curl -s -XPOST -H "X-API-KEY: $B" --data-binary @/tmp/data.json 'http://ceph1:8080/.admin?sign'` : Sends URLs for signing. Returns json with url and signed url pairs
+
+data.json should be a json file with url as key and how long the signature per url iv valid (in seconds). 
+Example request json: 
+```json
+{
+    "http://ceph1:8080/bublics/a23fa6e7-7b1d-4172-a48d-7e143d798788.jpeg": 180,
+    "http://ceph1:8080/bublics/c2cccb2f-64c7-4fed-8396-52246b962b79.jpeg": 120,
+    "http://ceph1:8080/bublics/dca6056b-49f9-478a-bfa8-bf61a4b2d89a.jpeg": 90,
+    "http://ceph1:8080/bublics/3379d4ae-9648-4492-815b-8dcb6bd2bc13.jpeg": 150
+}
+```
+Example response :
+```json
+{
+    "http://ceph1:8080/bublics/3379d4ae-9648-4492-815b-8dcb6bd2bc13.jpeg": "http://ceph1:8080/bublics/3379d4ae-9648-4492-815b-8dcb6bd2bc13.jpeg?expiry=1685441705&signature=uNiDGPMxzSd9fx1rVOizGOgqjlegioOTfUKCEHLZ7ts",
+    "http://ceph1:8080/bublics/a23fa6e7-7b1d-4172-a48d-7e143d798788.jpeg": "http://ceph1:8080/bublics/a23fa6e7-7b1d-4172-a48d-7e143d798788.jpeg?expiry=1685441735&signature=mOalHyZKUX7860Dm_qe7RUB-hVHLihw9Cv1TKo2P7Ys",
+    "http://ceph1:8080/bublics/c2cccb2f-64c7-4fed-8396-52246b962b79.jpeg": "http://ceph1:8080/bublics/c2cccb2f-64c7-4fed-8396-52246b962b79.jpeg?expiry=1685441675&signature=tjzGy8e_jMmYne8LV4OGp4kJfuBmN_qYAkv8fjYx8Ls",
+    "http://ceph1:8080/bublics/dca6056b-49f9-478a-bfa8-bf61a4b2d89a.jpeg": "http://ceph1:8080/bublics/dca6056b-49f9-478a-bfa8-bf61a4b2d89a.jpeg?expiry=1685441645&signature=PoUiSCHltLSUKpurjgUUISpqEk_JfaUDiQyoqh9mqmE"
+}
+```
 
 ```curl -XDELETE  http://ceph1:8080/?cache```
 

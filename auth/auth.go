@@ -9,6 +9,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/golang-jwt/jwt"
+	"github.com/leg100/surl"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -35,11 +37,15 @@ type api struct {
 type adminapi struct {
 	adminkey string
 }
+type signurl struct {
+	signurl string
+}
 
 type credential struct {
-	Keys  map[string]bool
-	User  map[string]string
-	Token string
+	Keys    map[string]bool
+	User    map[string]string
+	Token   string
+	SignURL string
 	sync.RWMutex
 }
 
@@ -47,6 +53,7 @@ var Credential = &credential{
 	Keys:    map[string]bool{},
 	User:    map[string]string{},
 	Token:   "",
+	SignURL: "",
 	RWMutex: sync.RWMutex{},
 }
 
@@ -94,6 +101,16 @@ func (tk *token) auth() bool {
 	}
 
 }
+func (su *signurl) auth() bool {
+	signer := surl.New([]byte(configs.Conf.JWTSecret))
+	err := signer.Verify(su.signurl)
+	if err != nil {
+		//log.Println("verification failed: ", err.Error())
+		return false
+	}
+	//fmt.Println("verification succeeded")
+	return true
+}
 
 func DoAdminAuth(r *http.Request) bool {
 	a := adminapi{adminkey: r.Header.Get("X-API-KEY")}
@@ -119,6 +136,16 @@ func DoAuth(r *http.Request) bool {
 		}
 		c := token{token: jwthdr[len(jwthdr)-1]}
 		return c.auth()
+	case configs.Conf.AuthSighn:
+		vrfy := r.Host + r.RequestURI
+		if r.TLS != nil {
+			vrfy = "https://" + vrfy
+		} else {
+			vrfy = "http://" + vrfy
+		}
+		d := signurl{signurl: vrfy}
+		return d.auth()
+
 	}
 	return false
 }
@@ -184,4 +211,22 @@ func GenJWTtoken(in []byte) ([]byte, error) {
 		return nil, err2
 	}
 	return []byte(tokenString), nil
+}
+
+func SignUrl(body io.Reader) []byte {
+	inputdata := map[string]int{}
+	returnval := map[string]string{}
+
+	k, _ := io.ReadAll(body)
+	_ = json.Unmarshal(k, &inputdata)
+	for z, x := range inputdata {
+		signer := surl.New([]byte(configs.Conf.JWTSecret))
+		dur := time.Duration(x) * time.Second
+		signed, wer := signer.Sign(z, dur)
+		if wer == nil {
+			returnval[z] = signed
+		}
+	}
+	j, _ := json.Marshal(returnval)
+	return j
 }

@@ -400,20 +400,6 @@ func Put(w http.ResponseWriter, r *http.Request) {
 func Del(w http.ResponseWriter, r *http.Request) {
 	switch configs.Conf.DangeZone {
 	case true:
-		_, purgecache := r.URL.Query()["cache"]
-		if purgecache {
-			_ = metadata.Cache.Reset()
-			_ = metadata.Cache.ResetStats()
-			tools.WriteLogs(tools.GetIP(r), r.Method, "Purging everything from cache")
-			return
-		}
-		_, cachestats := r.URL.Query()["cachestats"]
-		if cachestats {
-			_ = metadata.Cache.ResetStats()
-			tools.WriteLogs(tools.GetIP(r), r.Method, "Resetting cache statistics")
-			return
-		}
-
 		s := strings.Split(r.URL.Path, "/")
 
 		if len(s) >= 3 {

@@ -20,6 +20,7 @@ type CfgType struct {
 	AuthApi          bool
 	AuthBasic        bool
 	AuthJWT          bool
+	AuthSighn        bool
 	JWTSecret        []byte
 	UsersFile        string
 	AuthRead         bool
@@ -59,6 +60,7 @@ var Conf = &CfgType{
 	AuthApi:          false,
 	AuthBasic:        false,
 	AuthJWT:          false,
+	AuthSighn:        false,
 	JWTSecret:        []byte(os.Getenv("JWTSECRET")),
 	AuthRead:         false,
 	AuthWrite:        false,
@@ -172,6 +174,10 @@ func SetVarsik() {
 	case "apikey":
 		tools.WriteLogs("Using ApiKey authentication")
 		Conf.AuthApi = true
+	case "signurl":
+		tools.WriteLogs("Using Signed URLs mechanism")
+		Conf.AuthSighn = true
+
 	}
 
 	if !Conf.AllPools {
