@@ -20,11 +20,12 @@ just download te WebRados binary, make it executable, and you are ready to run .
 Building from a source is also easy.
 
 ```shell
-git clone  https://github.com/sadoyan/go-webrados.git
-cd go-webrados
+git clone  https://github.com/sadoyan/webrados.git
+cd webrados
 export GOROOT=/path/to/your/go
 go mod tidy
-do build .
+go build .
+./webrados -config config.yml 
 ```
 
 ### **Configuration**
@@ -34,16 +35,15 @@ Example configuration file,  ```config.yml``` , with reasonable defaults is in r
 
 ```yaml
 main:
-  listen: 0.0.0.0:8080
-  dispatchers: 20
-  serveruser: admin
-  serverpass: 261a5983599fd57a016122ec85599ec4
-  dangerzone: yes
-  readonly: no
-  authread: no
-  authwrite: yes
-  radoconns: 25
-  logfile: no
+  listen : 0.0.0.0:8080
+  dispatchers : 20
+  adminapikey : eyJleHAiOjAsImhhc2giOiI4ZWZjMGM0N2NlZGM5OWU1Y2EwM2QxNjIyMGU4ZGRkZDY2MjQ3NjI4ZTkyZTUwNThjMzc1MTY5Nzc2ODkzOTc4In0Q05m2RZV2JRQiW1Ho1yKm2iqqD4SS2qFibUAJcHKJ8Q
+  dangerzone : yes
+  readonly : no
+  authread : yes
+  authwrite : yes
+  radoconns : 25
+  logfile : no
   logpath: /opt/webrados.log
   allpools: no
   poollist:
@@ -51,7 +51,7 @@ main:
     - donuts
     - images
   usersfile: users.txt
-  authtype: jwt # apikey , basic, jwt, none
+  authtype: signurl #apikey , basic, jwt, none
 cache:
   shards: 1024
   lifewindow: 10
@@ -60,11 +60,10 @@ cache:
   maxentrysize: 5000
   maxcachemb: 1024
 monitoring:
-  enabled: yes
-  url: 127.0.0.1:9090
+  enabled : yes
+  url:  127.0.0.1:9090
   user: admin
   pass: admin
-
 ```
 
 ### **API**
@@ -185,29 +184,32 @@ Key in existing config is just an example, please change it to a long string
 
 Admin command are working on http POST, PUT, GET methods. Here are examples. 
 
-`curl -H "X-API-KEY: $B" 'http://ceph:8080/.admin?purgecachestats'` : Purge Statistics for local cache  
-`curl -H "X-API-KEY: $B" 'http://ceph:8080/.admin?purgecache'` : Empty local cache
+`curl -H "X-API-KEY: $B" 'http://ceph1:8080/.admin?purgecachestats'` : Purge Statistics for local cache  
+`curl -H "X-API-KEY: $B" 'http://ceph1:8080/.admin?purgecache'` : Empty local cache
 `curl -H "X-API-KEY: $B" -d '{"url": "http://ceph1:8080","exp": 1685365532}'  'http://ceph1:8080/.admin?genjwt'` : Returns JWT token which expires at `exp` 
 `curl -s -XPOST -H "X-API-KEY: $B" --data-binary @/tmp/data.json 'http://ceph1:8080/.admin?sign'` : Sends URLs for signing. Returns json with url and signed url pairs
+
+URL signing will use `JWTSECRET` environment variable as a secret.  
 
 data.json should be a json file with url as key and how long the signature per url iv valid (in seconds). 
 Example request json: 
 ```json
 {
-    "http://ceph1:8080/bublics/a23fa6e7-7b1d-4172-a48d-7e143d798788.jpeg": 180,
-    "http://ceph1:8080/bublics/c2cccb2f-64c7-4fed-8396-52246b962b79.jpeg": 120,
-    "http://ceph1:8080/bublics/dca6056b-49f9-478a-bfa8-bf61a4b2d89a.jpeg": 90,
-    "http://ceph1:8080/bublics/3379d4ae-9648-4492-815b-8dcb6bd2bc13.jpeg": 150
+  "http://ceph1:8080/bublics/1.jpeg": 180,
+  "http://ceph1:8080/bublics/2.jpeg": 120,
+  "http://ceph1:8080/bublics/3.jpeg": 90,
+  "http://ceph1:8080/bublics/4.jpeg": 150
 }
 ```
 Example response :
 ```json
 {
-    "http://ceph1:8080/bublics/3379d4ae-9648-4492-815b-8dcb6bd2bc13.jpeg": "http://ceph1:8080/bublics/3379d4ae-9648-4492-815b-8dcb6bd2bc13.jpeg?expiry=1685441705&signature=uNiDGPMxzSd9fx1rVOizGOgqjlegioOTfUKCEHLZ7ts",
-    "http://ceph1:8080/bublics/a23fa6e7-7b1d-4172-a48d-7e143d798788.jpeg": "http://ceph1:8080/bublics/a23fa6e7-7b1d-4172-a48d-7e143d798788.jpeg?expiry=1685441735&signature=mOalHyZKUX7860Dm_qe7RUB-hVHLihw9Cv1TKo2P7Ys",
-    "http://ceph1:8080/bublics/c2cccb2f-64c7-4fed-8396-52246b962b79.jpeg": "http://ceph1:8080/bublics/c2cccb2f-64c7-4fed-8396-52246b962b79.jpeg?expiry=1685441675&signature=tjzGy8e_jMmYne8LV4OGp4kJfuBmN_qYAkv8fjYx8Ls",
-    "http://ceph1:8080/bublics/dca6056b-49f9-478a-bfa8-bf61a4b2d89a.jpeg": "http://ceph1:8080/bublics/dca6056b-49f9-478a-bfa8-bf61a4b2d89a.jpeg?expiry=1685441645&signature=PoUiSCHltLSUKpurjgUUISpqEk_JfaUDiQyoqh9mqmE"
+  "http://ceph1:8080/bublics/1.jpeg": "http://ceph1:8080/bublics/1.jpeg?expiry=1685441910&signature=G0L9EgRRYavGX8TRqLsH-ifIRm3__mFkR95wR3r4TyQ",
+  "http://ceph1:8080/bublics/2.jpeg": "http://ceph1:8080/bublics/2.jpeg?expiry=1685441850&signature=psSGxImNZdzuSixB8dbaUhlFO81Mj02q6zLUrB_Rajs",
+  "http://ceph1:8080/bublics/3.jpeg": "http://ceph1:8080/bublics/3.jpeg?expiry=1685441820&signature=Fr9OI0d_UMnAGZIPdt_tTl6QywH5Z0R_dnyfEgyxH3M",
+  "http://ceph1:8080/bublics/4.jpeg": "http://ceph1:8080/bublics/4.jpeg?expiry=1685441880&signature=3vG0YGxSRlxXo7xWyi5l7Otw8Y5WZteq7mfUUq26lKE"
 }
+
 ```
 
 ```curl -XDELETE  http://ceph1:8080/?cache```
