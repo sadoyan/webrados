@@ -4,7 +4,7 @@ main:
   adminapikey : eyJleHAiOjAsImhhc2giOiI4ZWZjMGM0N2NlZGM5OWU1Y2EwM2QxNjIyMGU4ZGRkZDY2MjQ3NjI4ZTkyZTUwNThjMzc1MTY5Nzc2ODkzOTc4In0Q05m2RZV2JRQiW1Ho1yKm2iqqD4SS2qFibUAJcHKJ8Q
   dangerzone : yes
   readonly : no
-  authread : yes
+  authread : no
   authwrite : yes
   radoconns : 25
   logfile : no

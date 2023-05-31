@@ -80,23 +80,23 @@ Configuration file is pretty simple and intuitive.
 ### **Section main**
 ---------
 
-| **Name**          | **Description**                                                                                                            |
-|-------------------|----------------------------------------------------------------------------------------------------------------------------|
-| **listen**        | IP port to bind.                                                                                                           |
-| **dispatchers**   | Number of threads for webserver.                                                                                           |
-| **serveruser**    | Static user.                                                                                                               |
-| **serverpass**    | MD5 hash of password for static user.                                                                                      |                                                   | 
-| **dangerzone**    | Enable HTTP DELETE method.                                                                                                 |
-| **readonly**      | Enable readonly mode. If 'yes' only GET is allowed.                                                                        |
-| **authread**      | Require authentication for GET only.                                                                                       |
-| **authwrite**     | Require authentication for POST/PUT/DELETE.                                                                                |
-| **radoconns**     | Number of connection to CEPH.                                                                                              |
-| **logfile**       | Log to file, if 'no' logs are sent to stdout.                                                                              |
-| **logpath**       | Path for log file.                                                                                                         |
-| **allpools:**     | yes/no . If yes program will scan ceph and enable access via web to all pool.                                              | 
-| **poollist:**     | Works only if **allpools** is set to **no**.                                                                               |  
-| **usersfile**     | Path for file containing list of users with `username passwordhash` format separated by new line.                          |
-| **authtype**      | Authentication methods. ***apikey*** (X-API-KEY Header) , **basic** (HTTP Basic Auth), **jwt** (https://jwt.io/), **none** |
+| **Name**          | **Description**                                                                                                                   |
+|-------------------|-----------------------------------------------------------------------------------------------------------------------------------|
+| **listen**        | IP port to bind.                                                                                                                  |
+| **dispatchers**   | Number of threads for webserver.                                                                                                  |
+| **serveruser**    | Static user.                                                                                                                      |
+| **serverpass**    | MD5 hash of password for static user.                                                                                             |                                                   | 
+| **dangerzone**    | Enable HTTP DELETE method.                                                                                                        |
+| **readonly**      | Enable readonly mode. If 'yes' only GET is allowed.                                                                               |
+| **authread**      | Require authentication for GET only.                                                                                              |
+| **authwrite**     | Require authentication for POST/PUT/DELETE.                                                                                       |
+| **radoconns**     | Number of connection to CEPH.                                                                                                     |
+| **logfile**       | Log to file, if 'no' logs are sent to stdout.                                                                                     |
+| **logpath**       | Path for log file.                                                                                                                |
+| **allpools:**     | yes/no . If yes program will scan ceph and enable access via web to all pool.                                                     | 
+| **poollist:**     | Works only if **allpools** is set to **no**.                                                                                      |  
+| **usersfile**     | Path for file containing list of users with `username passwordhash` format separated by new line.                                 |
+| **authtype**      | Authentication methods. signurl, **apikey** (X-API-KEY Header) , **basic** (HTTP Basic Auth), **jwt** (https://jwt.io/), **none** |
 
 ### **Section cache**
 ---------
