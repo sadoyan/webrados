@@ -128,11 +128,11 @@ If you are using Basic Auth, ```users.txt``` should contain user and md5hash of 
 
 On Linux systems ```echo -n SecretPaSs | md5sum |awk '{print $1}'```  will output md5hash for using it as password in ```users.txt``` file
 
-If you are using API keys ```users.txt``` should contain these keys seprated by new line. 
+If you are using API keys ```users.txt``` should contain these keys separated by new line. 
 
 Webrados will periodically read ```uesrs.txt``` file and automatically update users in memory.
 
-If you are using JWT Authenticatio, you should set the value of yout JWT Setcret as **JWTSECRET** OS enviroment. 
+If you are using JWT Authentication, you should set the value of your JWT Secret as **JWTSECRET** OS enviroment. 
 
 ```
 export JWTSECRET='Super$ecter123765@'
@@ -178,20 +178,31 @@ Removes entry of given file from metadata cache
 
 **Admin Endpoint**
 
-http://{BINDADDRESS}/.admin is special endpoinnt for performing some administration tasks. 
+http://{BINDADDRESS}/.admin is special endpoint for performing administration tasks. 
 This endpoint is always secured with special API-KEY solely for admin tasks. `config.yml[main][adminapikey]`. 
-Key in existing config is just an example, please change it to a long string
+Key in existing config is just an example, please change it.
 
-Admin command are working on http POST, PUT, GET methods. Here are examples. 
+Admin commands are working on http POST, PUT, GET methods. Here are examples. 
 
-`curl -H "X-API-KEY: $B" 'http://ceph1:8080/.admin?purgecachestats'` : Purge Statistics for local cache  
-`curl -H "X-API-KEY: $B" 'http://ceph1:8080/.admin?purgecache'` : Empty local cache
-`curl -H "X-API-KEY: $B" -d '{"url": "http://ceph1:8080","exp": 1685365532}'  'http://ceph1:8080/.admin?genjwt'` : Returns JWT token which expires at `exp` 
-`curl -s -XPOST -H "X-API-KEY: $B" --data-binary @/tmp/data.json 'http://ceph1:8080/.admin?sign'` : Sends URLs for signing. Returns json with url and signed url pairs
+```shell
+curl -H "X-API-KEY: $APIKEY" 'http://ceph1:8080/.admin?purgecachestats'
+```
+Purge Statistics for local cache
+```shell
+curl -H "X-API-KEY: $APIKEY" 'http://ceph1:8080/.admin?purgecache'
+```
+Empty local cache
+```shell
+curl -H "X-API-KEY: $APIKEY" -d '{"url": "http://ceph1:8080","exp": 1685365532}'  'http://ceph1:8080/.admin?genjwt'
+```
+Generate JWT token with TTL till `exp` 
 
+```shell
+curl -s -XPOST -H "X-API-KEY: $APIKEY" --data-binary @/tmp/data.json 'http://ceph1:8080/.admin?sign'
+```
+Sends URLs for signing. Returns json with url and signed url pairs. 
 URL signing will use `JWTSECRET` environment variable as a secret.  
-
-data.json should be a json file with url as key and how long the signature per url iv valid (in seconds). 
+data.json should be a json file with url(**string**) as key with value of TTL(**int**). TTL is seconds after **now**. 
 Example request json: 
 ```json
 {
