@@ -7,5 +7,6 @@ export JWTSECRET='Super$ecter123765@'
 
 #go run ./ -config config.yml
 
+#reflex -d none -r '.'  -s -- sh -c  'go mod tidy && go run ./ -config config.yml'
 reflex -d none -r '.'  -s -- sh -c  'go mod tidy && go run ./ -config config.yml'
 
